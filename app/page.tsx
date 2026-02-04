@@ -69,6 +69,17 @@ export default function RequestForm() {
                 imageUrl = publicUrl
             }
 
+            // Get department manager email
+            const { data: deptData } = await supabase
+                .from('departments')
+                .select('manager_email')
+                .eq('name', formData.department)
+                .single()
+
+            if (!deptData?.manager_email) {
+                throw new Error('ไม่พบอีเมลผู้จัดการแผนก กรุณาติดต่อ Admin')
+            }
+
             // Insert request
             const { error } = await supabase.from('requests').insert({
                 requester_name: formData.requesterName,
@@ -82,8 +93,32 @@ export default function RequestForm() {
 
             if (error) throw error
 
-            // Backend Edge Function (notify-approver) will automatically send email to dept manager
-            // No need to send email from frontend
+            // Send email directly using EmailJS (ส่งจาก Frontend เหมือนตัวอย่าง)
+            try {
+                await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service_id: 'service_nosm7gr',
+                        template_id: 'template_nxjk9hg',
+                        user_id: 'Q7ihBzmKWUYOHHmL2',
+                        template_params: {
+                            to_email: deptData.manager_email,
+                            to_name: 'ผู้จัดการแผนก',
+                            requester_name: formData.requesterName,
+                            department: formData.department,
+                            objective: formData.objective,
+                            start_time: new Date(formData.startTime).toLocaleString('th-TH'),
+                            end_time: new Date(formData.endTime).toLocaleString('th-TH'),
+                            status: 'รอผู้จัดการแผนกอนุมัติ'
+                        }
+                    })
+                })
+                console.log('✅ ส่งอีเมลสำเร็จ')
+            } catch (emailError) {
+                console.error('⚠️ ส่งอีเมลไม่สำเร็จ แต่บันทึกข้อมูลสำเร็จแล้ว:', emailError)
+                // ไม่ throw error เพราะข้อมูลบันทึกสำเร็จแล้ว
+            }
 
             setSuccess(true)
             setTimeout(() => {
