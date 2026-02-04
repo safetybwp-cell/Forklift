@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อนุมัติคำขอใช้รถ Forklift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #10b981;
+            --secondary: #06b6d4;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+        }
+
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        /* ===== LOGIN OVERLAY =====  */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-card h2 {
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+
+        .login-card p {
+            color: var(--gray-600);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--gray-600);
+            border: 2px solid var(--gray-200);
+        }
+
+        .btn-outline:hover {
+            background: var(--gray-50);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 18px;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .mt-2 {
+            margin-top: 8px;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .error-message.show {
+            opacity: 1;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-brand h1 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .navbar-brand small {
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--gray-600);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .info-item strong {
+            display: block;
+            color: var(--gray-600);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .info-item span {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .text-danger {
+            color: var(--danger);
+        }
+
+        .mb-3 {
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div style="font-size: 64px; margin-bottom: 16px;">🚜</div>
+            <h2>เข้าสู่ระบบอนุมัติ</h2>
+            <p>กรุณากรอกรหัสผ่านของแผนก</p>
+
+            <div class="form-group">
+                <input type="password" id="passwordInput" class="form-control text-center" placeholder="รหัสผ่าน"
+                    inputmode="numeric" style="font-size: 1.25rem; letter-spacing: 4px;">
+                <div class="error-message" id="loginError"></div>
+            </div>
+
+            <button class="btn btn-primary w-full btn-lg" onclick="doLogin()">
+                เข้าสู่ระบบ
+            </button>
+
+            <a href="index.html" class="btn btn-outline w-full mt-2">
+                ⬅️ กลับหน้าหลัก
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" style="display: none;">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="navbar-brand">
+                    <div style="font-size: 32px;">🚜</div>
+                    <div>
+                        <h1>อนุมัติคำขอใช้รถ Forklift</h1>
+                        <small id="userInfo">กำลังโหลด...</small>
+                    </div>
+                </div>
+                <div class="navbar-actions">
+                    <button onclick="refreshData()" class="btn btn-outline btn-sm">🔄 รีเฟรช</button>
+                    <button onclick="logout()" class="btn btn-danger btn-sm">ออก</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- Main Table Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin: 0;">📋 รายการรออนุมัติ</h3>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ผู้ขอ</th>
+                                    <th>แผนก</th>
+                                    <th>วัตถุประสงค์</th>
+                                    <th>เวลาใช้</th>
+                                    <th>สถานะ</th>
+                                    <th style="text-align: center;">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center" style="padding: 40px;">กำลังโหลด...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">รายละเอียดคำขอ</h2>
+                <button class="modal-close" onclick="hideModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer" id="modalFooter">
+                <!-- Buttons will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module">
+        // Load Supabase config from environment
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
+        const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
+
+        // For static HTML, we'll load from a config file
+        // TODO: Create a small config.js or load from .env
+        // For now, use window.location to determine
+
+        // Temporary: Load from Next.js public env if available,  otherwise user must configure
+        const supabase = window.supabase.createClient(
+            SUPABASE_URL || '',
+            SUPABASE_ANON_KEY || ''
+        );
+
+        // State
+        let currentUserRole = ''; // 'manager' or 'head'
+        let currentUserDept = ''; // Department name
+        let allRequests = [];
+        let currentRequest = null;
+
+        // Check session on load
+        document.addEventListener('DOMContentLoaded', function () {
+            const isLoggedIn = sessionStorage.getItem('forkliftApprover') === 'true';
+            if (isLoggedIn) {
+                currentUserRole = sessionStorage.getItem('forkliftRole');
+                currentUserDept = sessionStorage.getItem('forkliftDept');
+                showMainContent();
+            }
+
+            // Enter key for login
+            document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') doLogin();
+            });
+        });
+
+        // Login
+        async function doLogin() {
+            const password = document.getElementById('passwordInput').value.trim();
+            const errorEl = document.getElementById('loginError');
+
+            if (!password) {
+                errorEl.textContent = 'กรุณากรอกรหัสผ่าน';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                // Check if Warehouse password (Special role for warehouse)
+                const { data: warehouseDept } = await supabase
+                    .from('departments')
+                    .select('*')
+                    .eq('name', 'Warehouse')
+                    .eq('password', password)
+                    .single();
+
+                if (warehouseDept) {
+                    currentUserRole = 'warehouse';
+                    currentUserDept = 'Warehouse';
+                    sessionStorage.setItem('forkliftApprover', 'true');
+                    sessionStorage.setItem('forkliftRole', 'warehouse');
+                    sessionStorage.setItem('forkliftDept', 'Warehouse');
+                    showMainContent();
+                    return;
+                }
+
+                // Check department password
+                const { data: dept } = await supabase
+                    .from('departments')
+                    .select('*')
+                    .eq('password', password)
+                    .single();
+
+                if (dept) {
+                    currentUserRole = 'head';
+                    currentUserDept = dept.name;
+                    sessionStorage.setItem('forkliftApprover', 'true');
+                    sessionStorage.setItem('forkliftRole', 'head');
+                    sessionStorage.setItem('forkliftDept', dept.name);
+                    showMainContent();
+                    return;
+                }
+
+                // Invalid password
+                errorEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
+                errorEl.classList.add('show');
+
+            } catch (err) {
+                console.error(err);
+                errorEl.textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+                errorEl.classList.add('show');
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            const roleText = currentUserRole === 'warehouse' ? 'ผู้จัดการคลัง (Warehouse)' : `ผู้จัดการแผนก (${currentUserDept})`;
+            document.getElementById('userInfo').textContent = roleText;
+
+            loadData();
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.reload();
+        }
+
+        // Data loading
+        async function loadData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 40px;">⏳ กำลังโหลด...</td></tr>';
+
+            try {
+                let query = supabase.from('requests').select('*').order('created_at', { ascending: false });
+
+                if (currentUserRole === 'head') {
+                    // Department head sees "pending" requests for their department
+                    query = query.eq('status', 'pending').eq('department', currentUserDept);
+                } else if (currentUserRole === 'warehouse') {
+                    // Warehouse sees "dept_manager_approved" requests
+                    query = query.eq('status', 'dept_manager_approved');
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                allRequests = data || [];
+                renderTable();
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger" style="padding: 40px;">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+
+            if (allRequests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 40px; color: #6b7280;">✅ ไม่มีรายการรออนุมัติ</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            allRequests.forEach(req => {
+                const row = document.createElement('tr');
+                const statusBadge = getStatusBadge(req.status);
+                const timeRange = `${new Date(req.start_time).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })} - ${new Date(req.end_time).toLocaleString('th-TH', { timeStyle: 'short' })}`;
+
+                row.innerHTML = `
+                    <td><strong>${req.requester_name}</strong></td>
+                    <td>${req.department}</td>
+                    <td>${req.objective}</td>
+                    <td style="font-size: 13px;">${timeRange}</td>
+                    <td>${statusBadge}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-primary btn-sm" onclick="openDetail('${req.id}')">
+                            ตรวจสอบ
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusBadge(status) {
+            const statuses = {
+                'pending': { label: 'รอผู้จัดการแผนก', class: 'badge-warning' },
+                'dept_manager_approved': { label: 'รอคลัง', class: 'badge-warning' },
+                'warehouse_approved': { label: 'อนุมัติแล้ว', class: 'badge-success' },
+                'rejected': { label: 'ไม่อนุมัติ', class: 'badge-danger' }
+            };
+
+            const s = statuses[status] || { label: status, class: 'badge-secondary' };
+            return `<span class="badge ${s.class}">${s.label}</span>`;
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        // Detail Modal
+        function openDetail(id) {
+            currentRequest = allRequests.find(r => r.id === id);
+            if (!currentRequest) return;
+
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+
+            const startTime = new Date(currentRequest.start_time).toLocaleString('th-TH');
+            const endTime = new Date(currentRequest.end_time).toLocaleString('th-TH');
+
+            modalBody.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>ผู้ขอ</strong>
+                        <span>${currentRequest.requester_name}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>แผนก</strong>
+                        <span>${currentRequest.department}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>อีเมลผู้ขอ</strong>
+                        <span>${currentRequest.requester_email || '-'}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>สถานะ</strong>
+                        <span>${getStatusBadge(currentRequest.status)}</span>
+                    </div>
+                </div>
+
+                <div class="info-item mb-3">
+                    <strong>วัตถุประสงค์</strong>
+                    <span>${currentRequest.objective}</span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>เวลาเริ่มใช้</strong>
+                        <span class="text-primary">${startTime}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>เวลาคืนรถ</strong>
+                        <span class="text-danger">${endTime}</span>
+                    </div>
+                </div>
+
+                ${currentRequest.vehicle_image_url ? `
+                    <div class="info-item mb-3" style="margin-top: 20px;">
+                        <strong>รูปภาพสภาพรถ</strong>
+                        <img src="${currentRequest.vehicle_image_url}" style="width: 100%; border-radius: 8px; margin-top: 8px;">
+                    </div>
+                ` : ''}
+            `;
+
+            modalFooter.innerHTML = `
+                <button class="btn btn-outline" onclick="hideModal()">ปิด</button>
+                <button class="btn btn-danger" onclick="rejectRequest()">❌ ไม่อนุมัติ</button>
+                <button class="btn btn-primary" onclick="approveRequest()">✅ อนุมัติ</button>
+            `;
+
+            document.getElementById('detailModal').classList.add('show');
+        }
+
+        function hideModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        async function approveRequest() {
+            if (!currentRequest) return;
+
+            if (!confirm('ยืนยันการอนุมัติคำขอนี้?')) return;
+
+            try {
+                let newStatus = '';
+                if (currentUserRole === 'head') {
+                    newStatus = 'dept_manager_approved';
+                } else if (currentUserRole === 'warehouse') {
+                    newStatus = 'warehouse_approved';
+                }
+
+                const { error } = await supabase
+                    .from('requests')
+                    .update({ status: newStatus })
+                    .eq('id', currentRequest.id);
+
+                if (error) throw error;
+
+                alert('✅ อนุมัติคำขอเรียบร้อย!');
+                hideModal();
+                loadData();
+
+                // TODO: Send email notification here
+                // If head approved -> notify warehouse
+                // If warehouse approved -> notify requester
+
+            } catch (err) {
+                console.error(err);
+                alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+            }
+        }
+
+        async function rejectRequest() {
+            if (!currentRequest) return;
+
+            const reason = prompt('กรุณาระบุเหตุผลที่ไม่อนุมัติ:');
+            if (!reason || !reason.trim()) {
+                alert('กรุณาระบุเหตุผล');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('requests')
+                    .update({ status: 'rejected' })
+                    .eq('id', currentRequest.id);
+
+                if (error) throw error;
+
+                alert('คำขอถูกปฏิเสธเรียบร้อย');
+                hideModal();
+                loadData();
+
+                // TODO: Send email notification to requester
+
+            } catch (err) {
+                console.error(err);
+                alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+            }
+        }
+
+        // Make functions global (for onclick handlers)
+        window.doLogin = doLogin;
+        window.logout = logout;
+        window.refreshData = refreshData;
+        window.openDetail = openDetail;
+        window.hideModal = hideModal;
+        window.approveRequest = approveRequest;
+        window.rejectRequest = rejectRequest;
+    </script>
+</body>
+
+</html>
