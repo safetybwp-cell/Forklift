@@ -110,7 +110,8 @@ export default function RequestForm() {
                             objective: formData.objective,
                             start_time: new Date(formData.startTime).toLocaleString('th-TH'),
                             end_time: new Date(formData.endTime).toLocaleString('th-TH'),
-                            status: 'รอผู้จัดการแผนกอนุมัติ'
+                            status: 'รอผู้จัดการแผนกอนุมัติ',
+                            approval_link: 'https://forklift-brown.vercel.app/approve.html'
                         }
                     })
                 })

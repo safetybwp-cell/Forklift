@@ -722,10 +722,26 @@
 
                 try {
                     let newStatus = '';
+                    let emailRecipient = '';
+                    let emailTemplate = '';
+
                     if (currentUserRole === 'head') {
                         newStatus = 'dept_manager_approved';
+
+                        // Get warehouse manager email
+                        const { data: warehouseDept } = await supabase
+                            .from('departments')
+                            .select('warehouse_manager_email')
+                            .eq('name', 'Warehouse')
+                            .single();
+
+                        emailRecipient = warehouseDept?.warehouse_manager_email || '';
+                        emailTemplate = 'แจ้งผู้จัดการคลัง';
+
                     } else if (currentUserRole === 'warehouse') {
                         newStatus = 'warehouse_approved';
+                        emailRecipient = currentRequest.requester_email || '';
+                        emailTemplate = 'แจ้งผู้ขอ';
                     }
 
                     const { error } = await supabase
@@ -734,6 +750,36 @@
                         .eq('id', currentRequest.id);
 
                     if (error) throw error;
+
+                    // Send email notification
+                    if (emailRecipient) {
+                        try {
+                            await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    service_id: 'service_nosm7gr',
+                                    template_id: 'template_nxjk9hg', // Approval notification template
+                                    user_id: 'Q7ihBzmKWUYOHHmL2',
+                                    template_params: {
+                                        to_email: emailRecipient,
+                                        to_name: emailTemplate === 'แจ้งผู้ขอ' ? currentRequest.requester_name : 'ผู้จัดการคลัง',
+                                        requester_name: currentRequest.requester_name,
+                                        department: currentRequest.department,
+                                        objective: currentRequest.objective,
+                                        start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
+                                        end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
+                                        status: newStatus === 'warehouse_approved' ? 'อนุมัติแล้ว - พร้อมใช้งาน' : 'รอผู้จัดการคลังอนุมัติ',
+                                        approval_link: 'https://forklift-brown.vercel.app/approve.html'
+                                    }
+                                })
+                            });
+                            console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ');
+                        } catch (emailError) {
+                            console.error('⚠️ ส่งอีเมลแจ้งเตือนไม่สำเร็จ:', emailError);
+                            // ไม่ throw error เพราะการอนุมัติสำเร็จแล้ว
+                        }
+                    }
 
                     alert('✅ อนุมัติคำขอเรียบร้อย!');
                     hideModal();
