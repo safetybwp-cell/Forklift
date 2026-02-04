@@ -1,9 +1,20 @@
 -- ============================================
--- TABLE: departments
+-- MIGRATION: Recreate departments table with password support
 -- ============================================
--- สำหรับเก็บข้อมูลแผนกและ Password สำหรับอนุมัติ
+-- ⚠️ คำเตือน: Script นี้จะลบตาราง departments เก่าทิ้ง!
+-- ถ้ามีข้อมูล Email ผู้จัดการที่สำคัญ ให้ Backup ก่อน!
 
-CREATE TABLE IF NOT EXISTS departments (
+-- ลบตารางเก่าทิ้ง (พร้อม policies และ triggers)
+DROP TABLE IF EXISTS departments CASCADE;
+
+-- ลบ function เก่า (ถ้ามี)
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+
+-- ============================================
+-- TABLE: departments (NEW VERSION)
+-- ============================================
+
+CREATE TABLE departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
@@ -16,20 +27,17 @@ CREATE TABLE IF NOT EXISTS departments (
 -- ============================================
 -- INITIAL DATA
 -- ============================================
--- ใส่ข้อมูลแผนกเริ่มต้น
 
 INSERT INTO departments (name, password, manager_email, warehouse_manager_email) VALUES
 ('Production', '1001', 'production.manager@company.com', NULL),
 ('Warehouse', '2001', NULL, 'warehouse.manager@company.com'),
 ('Logistics', '1002', 'logistics.manager@company.com', NULL),
 ('Maintenance', '1003', 'maintenance.manager@company.com', NULL),
-('QC', '1004', 'qc.manager@company.com', NULL)
-ON CONFLICT (name) DO NOTHING;
+('QC', '1004', 'qc.manager@company.com', NULL);
 
 -- ============================================
 -- RLS POLICIES
 -- ============================================
--- เปิด RLS
 
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 
@@ -37,7 +45,7 @@ ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON departments
     FOR SELECT USING (true);
 
--- อนุญาตให้แก้ไขสำหรับ authenticated users เท่านั้น (Super Admin)
+-- อนุญาตให้แก้ไขสำหรับ authenticated users เท่านั้น
 CREATE POLICY "Allow authenticated update" ON departments
     FOR UPDATE USING (true);
 
@@ -50,13 +58,15 @@ CREATE POLICY "Allow authenticated delete" ON departments
 -- ============================================
 -- INDEXES
 -- ============================================
-CREATE INDEX IF NOT EXISTS idx_departments_name ON departments(name);
-CREATE INDEX IF NOT EXISTS idx_departments_password ON departments(password);
+
+CREATE INDEX idx_departments_name ON departments(name);
+CREATE INDEX idx_departments_password ON departments(password);
 
 -- ============================================
 -- UPDATED_AT TRIGGER
 -- ============================================
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+
+CREATE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -68,3 +78,10 @@ CREATE TRIGGER update_departments_updated_at
     BEFORE UPDATE ON departments
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- VERIFICATION
+-- ============================================
+
+-- ตรวจสอบว่าสร้างเสร็จแล้ว
+SELECT * FROM departments ORDER BY name;
