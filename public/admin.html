@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - จัดการแผนกและรหัสผ่าน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-card h2 {
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+
+        .login-card p {
+            color: var(--gray-600);
+            margin-bottom: 24px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* Main Content */
+        .navbar {
+            background: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+            padding: 24px;
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            padding: 24px;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div style="font-size: 64px; margin-bottom: 16px;">🔒</div>
+            <h2>Admin Login</h2>
+            <p>กรุณากรอกรหัสผ่าน Super Admin</p>
+
+            <input type="password" id="passwordInput" class="form-control" placeholder="รหัสผ่าน Admin"
+                style="font-size: 1.25rem; letter-spacing: 4px;">
+            <div class="error-message" id="loginError"></div>
+
+            <button class="btn btn-primary" onclick="window.doLogin()">เข้าสู่ระบบ</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" style="display: none;">
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div>
+                    <h1 style="font-size: 20px;">🔐 Admin Dashboard</h1>
+                    <small style="color: var(--gray-600);">จัดการแผนกและรหัสผ่าน</small>
+                </div>
+                <div>
+                    <button onclick="window.logout()" class="btn btn-danger btn-sm">ออกจากระบบ</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">📋 จัดการแผนก</h3>
+                    <button onclick="window.showAddModal()" class="btn btn-success btn-sm">+ เพิ่มแผนก</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ชื่อแผนก</th>
+                            <th>รหัสผ่าน</th>
+                            <th>Email ผู้จัดการแผนก</th>
+                            <th>Email ผู้จัดการคลัง</th>
+                            <th style="text-align: center;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deptTable">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px;">กำลังโหลด...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2 id="modalTitle">แก้ไขแผนก</h2>
+
+            <div class="form-group">
+                <label>ชื่อแผนก</label>
+                <input type="text" id="editName" class="form-control" placeholder="Production">
+            </div>
+
+            <div class="form-group">
+                <label>รหัสผ่าน (4 หลัก)</label>
+                <input type="text" id="editPassword" class="form-control" placeholder="1001" maxlength="4">
+            </div>
+
+            <div class="form-group">
+                <label>Email ผู้จัดการแผนก</label>
+                <input type="email" id="editManagerEmail" class="form-control" placeholder="manager@company.com">
+            </div>
+
+            <div class="form-group">
+                <label>Email ผู้จัดการคลัง (สำหรับแผนก Warehouse เท่านั้น)</label>
+                <input type="email" id="editWarehouseEmail" class="form-control" placeholder="warehouse@company.com">
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="window.hideModal()">ยกเลิก</button>
+                <button class="btn btn-success" onclick="window.saveDept()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/config.js"></script>
+    <script>
+        (function () {
+            const ADMIN_PASSWORD = '9999'; // รหัสผ่าน Super Admin (เปลี่ยนได้)
+
+            const supabase = window.supabase.createClient(
+                window.SUPABASE_CONFIG.url,
+                window.SUPABASE_CONFIG.anonKey
+            );
+
+            let departments = [];
+            let currentEditId = null;
+
+            // Login
+            function doLogin() {
+                const password = document.getElementById('passwordInput').value.trim();
+                const errorEl = document.getElementById('loginError');
+
+                if (password === ADMIN_PASSWORD) {
+                    sessionStorage.setItem('isAdmin', 'true');
+                    showMainContent();
+                } else {
+                    errorEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
+                }
+            }
+
+            function showMainContent() {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                loadDepartments();
+            }
+
+            function logout() {
+                sessionStorage.clear();
+                window.location.reload();
+            }
+
+            // Load departments
+            async function loadDepartments() {
+                const tbody = document.getElementById('deptTable');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">⏳ กำลังโหลด...</td></tr>';
+
+                try {
+                    const { data, error } = await supabase
+                        .from('departments')
+                        .select('*')
+                        .order('name');
+
+                    if (error) throw error;
+
+                    departments = data || [];
+                    renderTable();
+                } catch (err) {
+                    console.error(err);
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 40px;">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+                }
+            }
+
+            function renderTable() {
+                const tbody = document.getElementById('deptTable');
+
+                if (departments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">ไม่มีข้อมูลแผนก</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                departments.forEach(dept => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${dept.name}</strong></td>
+                        <td><code>${dept.password}</code></td>
+                        <td>${dept.manager_email || '-'}</td>
+                        <td>${dept.warehouse_manager_email || '-'}</td>
+                        <td style="text-align: center;">
+                            <div class="actions">
+                                <button class="btn btn-primary btn-sm" onclick="window.editDept('${dept.id}')">แก้ไข</button>
+                                <button class="btn btn-danger btn-sm" onclick="window.deleteDept('${dept.id}', '${dept.name}')">ลบ</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // Modal
+            function showAddModal() {
+                currentEditId = null;
+                document.getElementById('modalTitle').textContent = 'เพิ่มแผนกใหม่';
+                document.getElementById('editName').value = '';
+                document.getElementById('editPassword').value = '';
+                document.getElementById('editManagerEmail').value = '';
+                document.getElementById('editWarehouseEmail').value = '';
+                document.getElementById('editModal').classList.add('show');
+            }
+
+            function editDept(id) {
+                const dept = departments.find(d => d.id === id);
+                if (!dept) return;
+
+                currentEditId = id;
+                document.getElementById('modalTitle').textContent = 'แก้ไขแผนก: ' + dept.name;
+                document.getElementById('editName').value = dept.name;
+                document.getElementById('editPassword').value = dept.password;
+                document.getElementById('editManagerEmail').value = dept.manager_email || '';
+                document.getElementById('editWarehouseEmail').value = dept.warehouse_manager_email || '';
+                document.getElementById('editModal').classList.add('show');
+            }
+
+            function hideModal() {
+                document.getElementById('editModal').classList.remove('show');
+            }
+
+            async function saveDept() {
+                const name = document.getElementById('editName').value.trim();
+                const password = document.getElementById('editPassword').value.trim();
+                const managerEmail = document.getElementById('editManagerEmail').value.trim();
+                const warehouseEmail = document.getElementById('editWarehouseEmail').value.trim();
+
+                if (!name || !password) {
+                    alert('กรุณากรอกชื่อแผนกและรหัสผ่าน');
+                    return;
+                }
+
+                if (password.length !== 4 || !/^\d+$/.test(password)) {
+                    alert('รหัสผ่านต้องเป็นตัวเลข 4 หลัก');
+                    return;
+                }
+
+                try {
+                    if (currentEditId) {
+                        // Update
+                        const { error } = await supabase
+                            .from('departments')
+                            .update({
+                                name,
+                                password,
+                                manager_email: managerEmail || null,
+                                warehouse_manager_email: warehouseEmail || null
+                            })
+                            .eq('id', currentEditId);
+
+                        if (error) throw error;
+                        alert('✅ แก้ไขข้อมูลสำเร็จ');
+                    } else {
+                        // Insert
+                        const { error } = await supabase
+                            .from('departments')
+                            .insert({
+                                name,
+                                password,
+                                manager_email: managerEmail || null,
+                                warehouse_manager_email: warehouseEmail || null
+                            });
+
+                        if (error) throw error;
+                        alert('✅ เพิ่มแผนกสำเร็จ');
+                    }
+
+                    hideModal();
+                    loadDepartments();
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
+            }
+
+            async function deleteDept(id, name) {
+                if (!confirm(`ยืนยันการลบแผนก "${name}"?`)) return;
+
+                try {
+                    const { error } = await supabase
+                        .from('departments')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+
+                    alert('✅ ลบแผนกสำเร็จ');
+                    loadDepartments();
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
+            }
+
+            // Check session on load
+            document.addEventListener('DOMContentLoaded', function () {
+                const isLoggedIn = sessionStorage.getItem('isAdmin') === 'true';
+                if (isLoggedIn) {
+                    showMainContent();
+                }
+
+                // Enter key for login
+                const pwdInput = document.getElementById('passwordInput');
+                if (pwdInput) {
+                    pwdInput.addEventListener('keypress', function (e) {
+                        if (e.key === 'Enter') doLogin();
+                    });
+                }
+            });
+
+            // Expose functions
+            window.doLogin = doLogin;
+            window.logout = logout;
+            window.showAddModal = showAddModal;
+            window.editDept = editDept;
+            window.hideModal = hideModal;
+            window.saveDept = saveDept;
+            window.deleteDept = deleteDept;
+        })();
+    </script>
+</body>
+
+</html>
