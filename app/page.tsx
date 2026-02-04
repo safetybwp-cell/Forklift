@@ -295,38 +295,13 @@ export default function RequestForm() {
                     </button>
                 </form>
 
-                <div className="mt-6 text-center flex flex-col gap-3 justify-center items-center">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const pwd = prompt('กรุณากรอกรหัสผ่านสำหรับเจ้าหน้าที่ (Staff Only):')
-                            if (pwd === '1111') {
-                                sessionStorage.setItem('isStaff', 'true')
-                                window.location.href = '/dashboard'
-                            } else if (pwd !== null) {
-                                alert('รหัสผ่านไม่ถูกต้อง')
-                            }
-                        }}
-                        className="text-primary hover:underline font-medium"
+                <div className="mt-6 text-center">
+                    <a
+                        href="/approve.html"
+                        className="text-primary hover:underline font-medium inline-block"
                     >
-                        🔐 เข้าสู่ระบบเจ้าหน้าที่ (Dashboard)
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const pwd = prompt('กรุณากรอกรหัสผ่านสำหรับ Admin:')
-                            if (pwd === '2222') {
-                                sessionStorage.setItem('isAdmin', 'true')
-                                window.location.href = '/admin'
-                            } else if (pwd !== null) {
-                                alert('รหัสผ่านไม่ถูกต้อง')
-                            }
-                        }}
-                        className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-                    >
-                        ⚙️ เข้าสู่ระบบ Admin
-                    </button>
+                        🔐 เข้าสู่ระบบอนุมัติคำขอ (สำหรับผู้จัดการ)
+                    </a>
                 </div>
             </div>
         </div>
