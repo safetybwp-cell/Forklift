@@ -7,6 +7,7 @@ import { Camera, Loader2, CheckCircle } from 'lucide-react'
 export default function RequestForm() {
     const [formData, setFormData] = useState({
         requesterName: '',
+        requesterEmail: '', // New field
         department: '', // Now stores ID or Name? Let's verify requirements. 
         // Plan said: "Send email to specific department manager".
         // So we should pick the selected dept object to get email.
@@ -71,6 +72,7 @@ export default function RequestForm() {
             // Insert request
             const { error } = await supabase.from('requests').insert({
                 requester_name: formData.requesterName,
+                requester_email: formData.requesterEmail,
                 department: formData.department,
                 objective: formData.objective,
                 start_time: formData.startTime,
@@ -80,30 +82,14 @@ export default function RequestForm() {
 
             if (error) throw error
 
-            // Find Manager Email
-            const selectedDept = deptList.find(d => d.name === formData.department)
-            const managerEmail = selectedDept?.manager_email || 'safety.bwp@gmail.com' // Fallback
-
-            // Send Email to Manager
-            await import('@/lib/email').then(({ sendEmail }) => {
-                sendEmail({
-                    to_name: 'Manager', // In real app, fetch tech manager's name
-                    to_email: managerEmail, // Assuming template accepts 'to_email' or we trigger it via 'to_name' if using EmailJS 'To' field binding? 
-                    // Wait, EmailJS usually sends to the one configured in template UNLESS adding a 'to_email' param AND configuring it in "To Email" field of template settings.
-                    // For now, let's pass it. If user didn't configure dynamic To, it goes to default.
-                    requester_name: formData.requesterName,
-                    department: formData.department,
-                    objective: formData.objective,
-                    start_time: new Date(formData.startTime).toLocaleString('th-TH'),
-                    end_time: new Date(formData.endTime).toLocaleString('th-TH'),
-                    link: window.location.origin + '/dashboard'
-                }, 'request')
-            })
+            // Backend Edge Function (notify-approver) will automatically send email to dept manager
+            // No need to send email from frontend
 
             setSuccess(true)
             setTimeout(() => {
                 setFormData({
                     requesterName: '',
+                    requesterEmail: '',
                     department: '',
                     objective: '',
                     startTime: '',
@@ -152,6 +138,21 @@ export default function RequestForm() {
                             onChange={(e) => setFormData({ ...formData, requesterName: e.target.value })}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                             placeholder="กรอกชื่อ-นามสกุล"
+                        />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            อีเมลผู้ขอ (สำหรับรับแจ้งเตือนเมื่ออนุมัติ) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="email"
+                            required
+                            value={formData.requesterEmail}
+                            onChange={(e) => setFormData({ ...formData, requesterEmail: e.target.value })}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            placeholder="example@company.com"
                         />
                     </div>
 

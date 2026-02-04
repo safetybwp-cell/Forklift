@@ -7,6 +7,7 @@ import { Loader2, TruckIcon, Clock, User, Download } from 'lucide-react'
 type Request = {
     id: string
     requester_name: string
+    requester_email: string // Added
     department: string
     objective: string
     start_time: string
@@ -17,9 +18,9 @@ type Request = {
 }
 
 const statusMap: { [key: string]: { label: string; color: string } } = {
-    pending: { label: '⏳ รอหัวหน้าอนุมัติ', color: 'bg-yellow-100 text-yellow-800' },
-    manager_approved: { label: '✅ หัวหน้าอนุมัติแล้ว (รอ Stock)', color: 'bg-blue-100 text-blue-800' },
-    stock_approved: { label: '🎉 อนุมัติเรียบร้อย', color: 'bg-green-100 text-green-800' },
+    pending: { label: '⏳ รอผจก.แผนกอนุมัติ', color: 'bg-yellow-100 text-yellow-800' },
+    dept_manager_approved: { label: '📋 รอผจก.คลังอนุมัติ', color: 'bg-blue-100 text-blue-800' },
+    warehouse_approved: { label: '🎉 อนุมัติครบถ้วน', color: 'bg-green-100 text-green-800' },
     rejected: { label: '❌ ปฏิเสธ', color: 'bg-red-100 text-red-800' },
 }
 
@@ -28,6 +29,8 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true)
     const [currentRole, setCurrentRole] = useState<'guest' | 'manager' | 'stock'>('manager') // Simulation
     const [processingId, setProcessingId] = useState<string | null>(null)
+    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending')
+    const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
     useEffect(() => {
         // Security Check
@@ -35,7 +38,7 @@ export default function Dashboard() {
         const isAdmin = sessionStorage.getItem('isAdmin') // Admin also can access
 
         if (!isStaff && !isAdmin) {
-            alert('กรุณาเข้าสู่ระบบก่อน')
+            window.alert('กรุณาเข้าสู่ระบบก่อน')
             window.location.href = '/'
             return
         }
@@ -60,9 +63,9 @@ export default function Dashboard() {
         let nextStatus = ''
 
         if (currentRole === 'manager' && currentStatus === 'pending') {
-            nextStatus = 'manager_approved'
-        } else if (currentRole === 'stock' && currentStatus === 'manager_approved') {
-            nextStatus = 'stock_approved'
+            nextStatus = 'dept_manager_approved'
+        } else if (currentRole === 'stock' && currentStatus === 'dept_manager_approved') {
+            nextStatus = 'warehouse_approved'
         } else {
             setProcessingId(null)
             return
@@ -74,32 +77,25 @@ export default function Dashboard() {
             .eq('id', id)
 
         if (!error) {
-            fetchRequests()
+            // Show success alert
+            setAlertMessage({ type: 'success', message: '✅ อนุมัติสำเร็จ! ระบบได้ส่งอีเมลแจ้งผู้เกี่ยวข้องแล้ว' })
 
-            // Send Email Notification
-            const { sendEmail } = await import('@/lib/email')
-            const request = requests.find(r => r.id === id)
+            // Auto-hide alert after 3 seconds
+            setTimeout(() => setAlertMessage(null), 3000)
 
-            if (nextStatus === 'manager_approved') {
-                // Notify Stock
-                sendEmail({
-                    to_name: 'Stock Manager',
-                    status: 'Manager Approved (Waiting for Stock)',
-                    approver_name: 'Manager',
-                    link: window.location.origin + '/dashboard'
-                }, 'approval')
-            } else if (nextStatus === 'stock_approved') {
-                // Notify Requester (Optional, assuming we have their email or just notify system)
-                sendEmail({
-                    to_name: request?.requester_name || 'User',
-                    status: 'Approved by Stock (Ready to use)',
-                    approver_name: 'Stock',
-                    link: window.location.origin + '/dashboard'
-                }, 'approval')
-            }
+            // Optimistically update local state to remove the item immediately
+            setRequests(prev => prev.map(r => r.id === id ? { ...r, status: nextStatus } : r))
+
+            // Refresh data in background
+            // fetchRequests()
+
+            // All email notifications are handled by Edge Function (notify-approver)
+            // Backend automatically sends emails based on status changes
+            console.log(`Status updated to: ${nextStatus}. Email will be sent by backend.`)
 
         } else {
-            alert('Error updating status')
+            setAlertMessage({ type: 'error', message: '❌ เกิดข้อผิดพลาด: ' + error.message })
+            setTimeout(() => setAlertMessage(null), 3000)
         }
         setProcessingId(null)
     }
@@ -114,9 +110,16 @@ export default function Dashboard() {
             .eq('id', id)
 
         if (!error) {
-            fetchRequests()
+            setAlertMessage({ type: 'success', message: '✅ ปฏิเสธคำขอเรียบร้อย' })
+            setTimeout(() => setAlertMessage(null), 3000)
+
+            // Optimistically update local state
+            setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r))
+
+            // fetchRequests()
         } else {
-            alert('Error updating status')
+            setAlertMessage({ type: 'error', message: '❌ เกิดข้อผิดพลาด: ' + error.message })
+            setTimeout(() => setAlertMessage(null), 3000)
         }
         setProcessingId(null)
     }
@@ -157,150 +160,58 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-white rounded-2xl shadow-2xl p-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-                        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                            <TruckIcon className="w-8 h-8" />
-                            Dashboard
-                        </h1>
+        <div className="min-h-screen p-6 bg-gray-100 flex items-center justify-center">
+            <div className="max-w-4xl w-full">
+                <h1 className="text-4xl font-bold text-center text-gray-800 mb-10">
+                    🚜 Dashboard ระบบอนุมัติ
+                </h1>
 
-                        <div className="flex items-center gap-4">
-                            {/* Role Simulator */}
-                            <select
-                                value={currentRole}
-                                onChange={(e) => setCurrentRole(e.target.value as any)}
-                                className="px-4 py-2 border rounded-lg bg-gray-50 font-medium"
-                            >
-                                <option value="guest">Guest View</option>
-                                <option value="manager">👤 Role: Manager</option>
-                                <option value="stock">📦 Role: Stock</option>
-                            </select>
-
-                            <button
-                                onClick={() => {
-                                    const pwd = prompt('กรุณากรอกรหัสผ่าน Admin:')
-                                    if (pwd === '2222') {
-                                        sessionStorage.setItem('isAdmin', 'true')
-                                        window.location.href = '/admin'
-                                    } else if (pwd !== null) {
-                                        alert('รหัสผ่านไม่ถูกต้อง!')
-                                    }
-                                }}
-                                className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 flex items-center gap-2"
-                            >
-                                ⚙️ Admin
-                            </button>
-
-                            <button
-                                onClick={handleExportCSV}
-                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                Export CSV
-                            </button>
-
-                            <a href="/" className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200">
-                                + สร้างคำขอใหม่
-                            </a>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Department Manager Card */}
+                    <a href="/dashboard/manager" className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition transform hover:-translate-y-1 group">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="bg-blue-100 p-4 rounded-full mb-6 group-hover:bg-blue-200 transition">
+                                <User className="w-12 h-12 text-blue-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">สำหรับผู้จัดการแผนก</h2>
+                            <p className="text-gray-500">
+                                (Step 1) อนุมัติคำขอจากพนักงานในแผนก
+                            </p>
+                            <span className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full font-bold group-hover:bg-blue-700 transition">
+                                เข้าสู่ระบบ
+                            </span>
                         </div>
-                    </div>
+                    </a>
 
-                    <div className="grid gap-4">
-                        {requests.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">ยังไม่มีคำขอ</p>
-                        ) : (
-                            requests.map((req) => (
-                                <div
-                                    key={req.id}
-                                    className="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition bg-white"
-                                >
-                                    <div className="flex flex-col md:flex-row items-start gap-4">
-                                        {req.vehicle_image_url && (
-                                            <img
-                                                src={req.vehicle_image_url}
-                                                alt="Vehicle"
-                                                className="w-full md:w-32 h-32 rounded-lg object-cover"
-                                            />
-                                        )}
-                                        <div className="flex-1 w-full">
-                                            <div className="flex flex-wrap items-start justify-between mb-2 gap-2">
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                                                        <User className="w-5 h-5" />
-                                                        {req.requester_name}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600">{req.department}</p>
-                                                </div>
-                                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusMap[req.status]?.color || 'bg-gray-100'}`}>
-                                                    {statusMap[req.status]?.label || req.status}
-                                                </span>
-                                            </div>
+                    {/* Warehouse Manager Card */}
+                    <a href="/dashboard/warehouse" className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition transform hover:-translate-y-1 group">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="bg-green-100 p-4 rounded-full mb-6 group-hover:bg-green-200 transition">
+                                <TruckIcon className="w-12 h-12 text-green-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">สำหรับผู้จัดการคลัง</h2>
+                            <p className="text-gray-500">
+                                (Step 2) ตรวจสอบและอนุมัติการจ่ายรถ
+                            </p>
+                            <span className="mt-6 px-6 py-2 bg-green-600 text-white rounded-full font-bold group-hover:bg-green-700 transition">
+                                เข้าสู่ระบบ
+                            </span>
+                        </div>
+                    </a>
+                </div>
 
-                                            <p className="text-gray-700 mb-2">
-                                                <strong>วัตถุประสงค์:</strong> {req.objective}
-                                            </p>
-
-                                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-4 h-4" />
-                                                    <span>
-                                                        {new Date(req.start_time).toLocaleString('th-TH')} →{' '}
-                                                        {new Date(req.end_time).toLocaleString('th-TH')}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="flex gap-2 justify-end pt-2 border-t mt-2">
-                                                {/* Manager Actions */}
-                                                {currentRole === 'manager' && req.status === 'pending' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleReject(req.id)}
-                                                            disabled={processingId === req.id}
-                                                            className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition"
-                                                        >
-                                                            ไม่อนุมัติ
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleApprove(req.id, req.status)}
-                                                            disabled={processingId === req.id}
-                                                            className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition flex items-center gap-2"
-                                                        >
-                                                            {processingId === req.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                                                            อนุมัติ (Manager)
-                                                        </button>
-                                                    </>
-                                                )}
-
-                                                {/* Stock Actions */}
-                                                {currentRole === 'stock' && req.status === 'manager_approved' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleReject(req.id)}
-                                                            disabled={processingId === req.id}
-                                                            className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg font-medium transition"
-                                                        >
-                                                            ไม่อนุมัติ
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleApprove(req.id, req.status)}
-                                                            disabled={processingId === req.id}
-                                                            className="px-4 py-2 text-white bg-green-600 hover:bg-green-700 rounded-lg font-medium transition flex items-center gap-2"
-                                                        >
-                                                            {processingId === req.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                                                            อนุมัติ (Stock)
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                <div className="mt-12 text-center">
+                    <button
+                        onClick={() => {
+                            const pwd = prompt('รหัสผ่าน Admin:')
+                            if (pwd === '2222') window.location.href = '/admin'
+                        }}
+                        className="text-gray-500 hover:text-gray-800 underline"
+                    >
+                        ⚙️ เข้าสู่ระบบผู้ดูแลระบบ (Admin)
+                    </button>
+                    <div className="mt-4">
+                        <a href="/" className="text-blue-500 hover:underline">← กลับหน้าแบบฟอร์ม</a>
                     </div>
                 </div>
             </div>
