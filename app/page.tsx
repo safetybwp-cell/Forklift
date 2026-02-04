@@ -303,6 +303,13 @@ export default function RequestForm() {
                     >
                         🔐 เข้าสู่ระบบอนุมัติคำขอ (สำหรับผู้จัดการ)
                     </a>
+                    <span className="mx-3 text-gray-400">|</span>
+                    <a
+                        href="/admin.html"
+                        className="text-purple-600 hover:underline font-medium inline-block"
+                    >
+                        ⚙️ Admin (จัดการแผนก)
+                    </a>
                 </div>
             </div>
         </div>
