@@ -122,7 +122,7 @@ export default function RequestForm() {
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-                    🚜 แบบฟอร์มขอใช้รถ Forklift
+                    🚜 แบบฟอร์มขอใช้รถ Forklift (V2)
                 </h1>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
