@@ -41,25 +41,73 @@ export default function ManagerDashboard() {
         setLoading(false)
     }
 
-    const handleApprove = async (id: string) => {
+    const handleApprove = async (id: string, req: Request) => {
         setProcessingId(id)
 
         // Optimistic Update
-        setRequests(prev => prev.filter(req => req.id !== id))
+        setRequests(prev => prev.filter(r => r.id !== id))
 
-        const { error } = await supabase
-            .from('requests')
-            .update({ status: 'dept_manager_approved' })
-            .eq('id', id)
+        try {
+            // 1. Update DB Status
+            const { error } = await supabase
+                .from('requests')
+                .update({ status: 'dept_manager_approved' })
+                .eq('id', id)
 
-        if (!error) {
-            setAlertMessage({ type: 'success', message: '✅ อนุมัติเรียบร้อย (ส่งต่อให้ฝ่ายคลัง)' })
+            if (error) throw error
+
+            // 2. Fetch Warehouse Manager Email
+            const { data: warehouseDept } = await supabase
+                .from('departments')
+                .select('warehouse_manager_email')
+                .eq('name', 'Warehouse')
+                .single()
+
+            // Fallback: If no specific warehouse email, try to find any dept with it or use a default
+            let whEmail = warehouseDept?.warehouse_manager_email
+
+            if (!whEmail) {
+                // Try fetching from the current request's department if configured there
+                const { data: currentDept } = await supabase
+                    .from('departments')
+                    .select('warehouse_manager_email')
+                    .eq('name', req.department)
+                    .single()
+                whEmail = currentDept?.warehouse_manager_email
+            }
+
+            if (whEmail) {
+                // 3. Send Email to Warehouse Manager
+                await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service_id: 'service_nosm7gr',
+                        template_id: 'template_nxjk9hg', // Use Request Template (since Warehouse needs to approve too)
+                        user_id: 'Q7ihBzmKWUYOHHmL2',
+                        template_params: {
+                            to_email: whEmail,
+                            to_name: 'ผู้จัดการคลังสินค้า',
+                            requester_name: req.requester_name,
+                            department: req.department,
+                            objective: req.objective,
+                            start_time: new Date(req.start_time).toLocaleString('th-TH'),
+                            end_time: new Date(req.end_time).toLocaleString('th-TH'),
+                            status: 'ผ่านการอนุมัติจากผจก.แผนกแล้ว - รอคลังอนุมัติ'
+                        }
+                    })
+                })
+                console.log('✅ Email sent to Warehouse Manager')
+            } else {
+                console.warn('⚠️ No Warehouse Manager Email found!')
+            }
+
+            setAlertMessage({ type: 'success', message: '✅ อนุมัติเรียบร้อย (แจ้งเตือนคลังสินค้าแล้ว)' })
             setTimeout(() => setAlertMessage(null), 3000)
-            // No fetchRequests needed due to optimistic update
-        } else {
+
+        } catch (error: any) {
             console.error(error)
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
-            // Revert optimistic update? Or just refresh
             fetchRequests()
         }
         setProcessingId(null)
@@ -133,7 +181,7 @@ export default function ManagerDashboard() {
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => handleApprove(req.id)}
+                                            onClick={() => handleApprove(req.id, req)}
                                             disabled={processingId === req.id}
                                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-sm transition"
                                         >

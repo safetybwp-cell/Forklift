@@ -41,21 +41,52 @@ export default function WarehouseDashboard() {
         setLoading(false)
     }
 
-    const handleApprove = async (id: string) => {
+    const handleApprove = async (id: string, req: Request) => {
         setProcessingId(id)
 
         // Optimistic Update
-        setRequests(prev => prev.filter(req => req.id !== id))
+        setRequests(prev => prev.filter(r => r.id !== id))
 
-        const { error } = await supabase
-            .from('requests')
-            .update({ status: 'warehouse_approved' }) // Final Step
-            .eq('id', id)
+        try {
+            // 1. Update DB Status
+            const { error } = await supabase
+                .from('requests')
+                .update({ status: 'warehouse_approved' })
+                .eq('id', id)
 
-        if (!error) {
-            setAlertMessage({ type: 'success', message: '✅ อนุมัติขั้นสุดท้ายเรียบร้อย' })
+            if (error) throw error
+
+            // 2. Send Email to Requester (Final Notification)
+            if (req.requester_email) {
+                await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service_id: 'service_nosm7gr',
+                        template_id: 'template_5w71ck9', // Status Update Template
+                        user_id: 'Q7ihBzmKWUYOHHmL2',
+                        template_params: {
+                            to_email: req.requester_email,
+                            to_name: req.requester_name,
+                            requester_name: req.requester_name,
+                            department: req.department,
+                            objective: req.objective,
+                            start_time: new Date(req.start_time).toLocaleString('th-TH'),
+                            end_time: new Date(req.end_time).toLocaleString('th-TH'),
+                            status: '✅ อนุมัติครบถ้วน - กรุณาติดต่อรับรถ',
+                            approver_name: 'ผู้จัดการคลังสินค้า'
+                        }
+                    })
+                })
+                console.log('✅ Email sent to Requester')
+            } else {
+                console.warn('⚠️ No Requester Email provided!')
+            }
+
+            setAlertMessage({ type: 'success', message: '✅ อนุมัติขั้นสุดท้ายเรียบร้อย (แจ้งเตือนผู้ขอแล้ว)' })
             setTimeout(() => setAlertMessage(null), 3000)
-        } else {
+
+        } catch (error: any) {
             console.error(error)
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
             fetchRequests()
@@ -134,7 +165,7 @@ export default function WarehouseDashboard() {
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            onClick={() => handleApprove(req.id)}
+                                            onClick={() => handleApprove(req.id, req)}
                                             disabled={processingId === req.id}
                                             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-sm transition"
                                         >
