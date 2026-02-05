@@ -854,9 +854,12 @@
                         emailRecipient = warehouseDept?.manager_email || warehouseDept?.warehouse_manager_email || '';
                         emailTemplate = 'แจ้งผู้จัดการคลัง';
 
-                    } else if (currentUserRole === 'warehouse') {
                         newStatus = 'warehouse_approved';
                         emailRecipient = currentRequest.requester_email || '';
+                        if (!emailRecipient) {
+                            alert('⚠️ เตือน: ไม่พบ Email ของผู้ขอในระบบ อาจทำให้ไม่ได้รับแจ้งเตือน');
+                            console.warn('Missing requester_email for request:', currentRequest);
+                        }
                         emailTemplate = 'แจ้งผู้ขอ';
                     }
 
