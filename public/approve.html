@@ -764,6 +764,24 @@
                         <span>${currentRequest.objective}</span>
                     </div>
 
+                    ${currentRequest.dept_approved_at || currentRequest.warehouse_approved_at ? `
+                        <div style="background: #f0fdf4; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                            <h4 style="margin: 0 0 12px 0; color: #065f46; font-size: 14px;">⏱️ ประวัติการอนุมัติ</h4>
+                            ${currentRequest.dept_approved_at ? `
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #d1fae5;">
+                                    <span style="color: #047857; font-weight: 500;">ผู้จัดการแผนกอนุมัติ:</span>
+                                    <span style="color: #065f46;">${new Date(currentRequest.dept_approved_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                </div>
+                            ` : ''}
+                            ${currentRequest.warehouse_approved_at ? `
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                    <span style="color: #047857; font-weight: 500;">ผู้จัดการคลังอนุมัติ:</span>
+                                    <span style="color: #065f46;">${new Date(currentRequest.warehouse_approved_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+
                     <div class="info-grid">
                         <div class="info-item">
                             <strong>เวลาเริ่มใช้</strong>
@@ -842,9 +860,18 @@
                         emailTemplate = 'แจ้งผู้ขอ';
                     }
 
+                    // Update request with new status and approval timestamp
+                    const updateData = { status: newStatus };
+
+                    if (currentUserRole === 'head') {
+                        updateData.dept_approved_at = new Date().toISOString();
+                    } else if (currentUserRole === 'warehouse') {
+                        updateData.warehouse_approved_at = new Date().toISOString();
+                    }
+
                     const { error } = await supabase
                         .from('requests')
-                        .update({ status: newStatus })
+                        .update(updateData)
                         .eq('id', currentRequest.id);
 
                     if (error) throw error;
@@ -1011,7 +1038,7 @@
 
                 // Prepare data
                 const ws_data = [
-                    ['เวลาที่สร้าง', 'ผู้ขอ', 'แผนก', 'วัตถุประสงค์', 'เวลาเริ่มใช้', 'เวลาคืน', 'สถานะ', 'Email'],
+                    ['เวลาที่สร้าง', 'ผู้ขอ', 'แผนก', 'วัตถุประสงค์', 'เวลาเริ่มใช้', 'เวลาคืน', 'ผจก.แผนกอนุมัติ', 'ผจก.คลังอนุมัติ', 'สถานะ', 'Email'],
                     ...data.map(r => [
                         new Date(r.created_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }),
                         r.requester_name,
@@ -1019,6 +1046,8 @@
                         r.objective,
                         new Date(r.start_time).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }),
                         new Date(r.end_time).toLocaleString('th-TH', { timeStyle: 'short' }),
+                        r.dept_approved_at ? new Date(r.dept_approved_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '-',
+                        r.warehouse_approved_at ? new Date(r.warehouse_approved_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : '-',
                         getStatusText(r.status),
                         r.requester_email || '-'
                     ])
@@ -1029,7 +1058,7 @@
                 const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
                 // Auto-filter
-                ws['!autofilter'] = { ref: `A1:H${data.length + 1}` };
+                ws['!autofilter'] = { ref: `A1:J${data.length + 1}` };
 
                 // Column widths
                 ws['!cols'] = [
@@ -1039,6 +1068,8 @@
                     { wch: 30 }, // Objective
                     { wch: 18 }, // Start
                     { wch: 12 }, // End
+                    { wch: 18 }, // Dept Approved
+                    { wch: 18 }, // Warehouse Approved
                     { wch: 20 }, // Status
                     { wch: 25 }  // Email
                 ];
