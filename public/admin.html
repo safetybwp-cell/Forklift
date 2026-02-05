@@ -389,28 +389,29 @@
                 }
             }
 
-            // Separate Warehouse from other departments
-            const warehouseDept = departments.find(d => d.name === 'Warehouse');
-            const otherDepts = departments.filter(d => d.name !== 'Warehouse');
+            function renderTable() {
+                // Separate Warehouse from other departments
+                const warehouseDept = departments.find(d => d.name === 'Warehouse');
+                const otherDepts = departments.filter(d => d.name !== 'Warehouse');
 
-            // Render Warehouse Config
-            const warehouseContainer = document.getElementById('warehouseConfig');
-            if (warehouseDept) {
-                document.getElementById('warehouseEmailInput').value = warehouseDept.warehouse_manager_email || '';
-                document.getElementById('warehouseId').value = warehouseDept.id;
-            }
+                // Render Warehouse Config
+                const warehouseContainer = document.getElementById('warehouseConfig');
+                if (warehouseDept) {
+                    document.getElementById('warehouseEmailInput').value = warehouseDept.warehouse_manager_email || '';
+                    document.getElementById('warehouseId').value = warehouseDept.id;
+                }
 
-            // Render Other Departments Table
-            const tbody = document.getElementById('deptTable');
-            if (otherDepts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">ไม่มีข้อมูลแผนกอื่นๆ</td></tr>';
-                return;
-            }
+                // Render Other Departments Table
+                const tbody = document.getElementById('deptTable');
+                if (otherDepts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">ไม่มีข้อมูลแผนกอื่นๆ</td></tr>';
+                    return;
+                }
 
-            tbody.innerHTML = '';
-            otherDepts.forEach(dept => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
+                tbody.innerHTML = '';
+                otherDepts.forEach(dept => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
                         <td><strong>${dept.name}</strong></td>
                         <td><code>${dept.password}</code></td>
                         <td>${dept.manager_email || '-'}</td>
@@ -421,170 +422,170 @@
                             </div>
                         </td>
                     `;
-                tbody.appendChild(row);
-            });
-        }
-
-            async function saveWarehouseEmail() {
-            const email = document.getElementById('warehouseEmailInput').value.trim();
-            const id = document.getElementById('warehouseId').value;
-            const btn = document.getElementById('saveWarehouseBtn');
-
-            if (!email) {
-                alert('กรุณากรอกอีเมล');
-                return;
-            }
-
-            try {
-                btn.textContent = 'กำลังบันทึก...';
-                btn.disabled = true;
-
-                // Update specific warehouse email field
-                const { error } = await supabase
-                    .from('departments')
-                    .update({ warehouse_manager_email: email })
-                    .eq('name', 'Warehouse'); // Ensure we update by name 'Warehouse'
-
-                if (error) throw error;
-                alert('✅ บันทึกอีเมลผู้จัดการคลังสำเร็จ');
-            } catch (err) {
-                console.error(err);
-                alert('❌ เกิดข้อผิดพลาด: ' + err.message);
-            } finally {
-                btn.textContent = 'บันทึก';
-                btn.disabled = false;
-            }
-        }
-
-        // Expose new function
-        window.saveWarehouseEmail = saveWarehouseEmail;
-
-        // Modal
-        function showAddModal() {
-            currentEditId = null;
-            document.getElementById('modalTitle').textContent = 'เพิ่มแผนกใหม่';
-            document.getElementById('editName').value = '';
-            document.getElementById('editPassword').value = '';
-            document.getElementById('editManagerEmail').value = '';
-            document.getElementById('editWarehouseEmail').value = '';
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function editDept(id) {
-            const dept = departments.find(d => d.id === id);
-            if (!dept) return;
-
-            currentEditId = id;
-            document.getElementById('modalTitle').textContent = 'แก้ไขแผนก: ' + dept.name;
-            document.getElementById('editName').value = dept.name;
-            document.getElementById('editPassword').value = dept.password;
-            document.getElementById('editManagerEmail').value = dept.manager_email || '';
-            document.getElementById('editWarehouseEmail').value = dept.warehouse_manager_email || '';
-            document.getElementById('editModal').classList.add('show');
-        }
-
-        function hideModal() {
-            document.getElementById('editModal').classList.remove('show');
-        }
-
-        async function saveDept() {
-            const name = document.getElementById('editName').value.trim();
-            const password = document.getElementById('editPassword').value.trim();
-            const managerEmail = document.getElementById('editManagerEmail').value.trim();
-            const warehouseEmail = document.getElementById('editWarehouseEmail').value.trim();
-
-            if (!name || !password) {
-                alert('กรุณากรอกชื่อแผนกและรหัสผ่าน');
-                return;
-            }
-
-            if (password.length !== 4 || !/^\d+$/.test(password)) {
-                alert('รหัสผ่านต้องเป็นตัวเลข 4 หลัก');
-                return;
-            }
-
-            try {
-                if (currentEditId) {
-                    // Update
-                    const { error } = await supabase
-                        .from('departments')
-                        .update({
-                            name,
-                            password,
-                            manager_email: managerEmail || null,
-                            warehouse_manager_email: warehouseEmail || null
-                        })
-                        .eq('id', currentEditId);
-
-                    if (error) throw error;
-                    alert('✅ แก้ไขข้อมูลสำเร็จ');
-                } else {
-                    // Insert
-                    const { error } = await supabase
-                        .from('departments')
-                        .insert({
-                            name,
-                            password,
-                            manager_email: managerEmail || null,
-                            warehouse_manager_email: warehouseEmail || null
-                        });
-
-                    if (error) throw error;
-                    alert('✅ เพิ่มแผนกสำเร็จ');
-                }
-
-                hideModal();
-                loadDepartments();
-            } catch (err) {
-                console.error(err);
-                alert('❌ เกิดข้อผิดพลาด: ' + err.message);
-            }
-        }
-
-        async function deleteDept(id, name) {
-            if (!confirm(`ยืนยันการลบแผนก "${name}"?`)) return;
-
-            try {
-                const { error } = await supabase
-                    .from('departments')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) throw error;
-
-                alert('✅ ลบแผนกสำเร็จ');
-                loadDepartments();
-            } catch (err) {
-                console.error(err);
-                alert('❌ เกิดข้อผิดพลาด: ' + err.message);
-            }
-        }
-
-        // Check session on load
-        document.addEventListener('DOMContentLoaded', function () {
-            const isLoggedIn = sessionStorage.getItem('isAdmin') === 'true';
-            if (isLoggedIn) {
-                showMainContent();
-            }
-
-            // Enter key for login
-            const pwdInput = document.getElementById('passwordInput');
-            if (pwdInput) {
-                pwdInput.addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter') doLogin();
+                    tbody.appendChild(row);
                 });
             }
-        });
 
-        // Expose functions
-        window.doLogin = doLogin;
-        window.logout = logout;
-        window.showAddModal = showAddModal;
-        window.editDept = editDept;
-        window.hideModal = hideModal;
-        window.saveDept = saveDept;
-        window.deleteDept = deleteDept;
-        }) ();
+            async function saveWarehouseEmail() {
+                const email = document.getElementById('warehouseEmailInput').value.trim();
+                const id = document.getElementById('warehouseId').value;
+                const btn = document.getElementById('saveWarehouseBtn');
+
+                if (!email) {
+                    alert('กรุณากรอกอีเมล');
+                    return;
+                }
+
+                try {
+                    btn.textContent = 'กำลังบันทึก...';
+                    btn.disabled = true;
+
+                    // Update specific warehouse email field
+                    const { error } = await supabase
+                        .from('departments')
+                        .update({ warehouse_manager_email: email })
+                        .eq('name', 'Warehouse'); // Ensure we update by name 'Warehouse'
+
+                    if (error) throw error;
+                    alert('✅ บันทึกอีเมลผู้จัดการคลังสำเร็จ');
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                } finally {
+                    btn.textContent = 'บันทึก';
+                    btn.disabled = false;
+                }
+            }
+
+            // Expose new function
+            window.saveWarehouseEmail = saveWarehouseEmail;
+
+            // Modal
+            function showAddModal() {
+                currentEditId = null;
+                document.getElementById('modalTitle').textContent = 'เพิ่มแผนกใหม่';
+                document.getElementById('editName').value = '';
+                document.getElementById('editPassword').value = '';
+                document.getElementById('editManagerEmail').value = '';
+                document.getElementById('editWarehouseEmail').value = '';
+                document.getElementById('editModal').classList.add('show');
+            }
+
+            function editDept(id) {
+                const dept = departments.find(d => d.id === id);
+                if (!dept) return;
+
+                currentEditId = id;
+                document.getElementById('modalTitle').textContent = 'แก้ไขแผนก: ' + dept.name;
+                document.getElementById('editName').value = dept.name;
+                document.getElementById('editPassword').value = dept.password;
+                document.getElementById('editManagerEmail').value = dept.manager_email || '';
+                document.getElementById('editWarehouseEmail').value = dept.warehouse_manager_email || '';
+                document.getElementById('editModal').classList.add('show');
+            }
+
+            function hideModal() {
+                document.getElementById('editModal').classList.remove('show');
+            }
+
+            async function saveDept() {
+                const name = document.getElementById('editName').value.trim();
+                const password = document.getElementById('editPassword').value.trim();
+                const managerEmail = document.getElementById('editManagerEmail').value.trim();
+                const warehouseEmail = document.getElementById('editWarehouseEmail').value.trim();
+
+                if (!name || !password) {
+                    alert('กรุณากรอกชื่อแผนกและรหัสผ่าน');
+                    return;
+                }
+
+                if (password.length !== 4 || !/^\d+$/.test(password)) {
+                    alert('รหัสผ่านต้องเป็นตัวเลข 4 หลัก');
+                    return;
+                }
+
+                try {
+                    if (currentEditId) {
+                        // Update
+                        const { error } = await supabase
+                            .from('departments')
+                            .update({
+                                name,
+                                password,
+                                manager_email: managerEmail || null,
+                                warehouse_manager_email: warehouseEmail || null
+                            })
+                            .eq('id', currentEditId);
+
+                        if (error) throw error;
+                        alert('✅ แก้ไขข้อมูลสำเร็จ');
+                    } else {
+                        // Insert
+                        const { error } = await supabase
+                            .from('departments')
+                            .insert({
+                                name,
+                                password,
+                                manager_email: managerEmail || null,
+                                warehouse_manager_email: warehouseEmail || null
+                            });
+
+                        if (error) throw error;
+                        alert('✅ เพิ่มแผนกสำเร็จ');
+                    }
+
+                    hideModal();
+                    loadDepartments();
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
+            }
+
+            async function deleteDept(id, name) {
+                if (!confirm(`ยืนยันการลบแผนก "${name}"?`)) return;
+
+                try {
+                    const { error } = await supabase
+                        .from('departments')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+
+                    alert('✅ ลบแผนกสำเร็จ');
+                    loadDepartments();
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ เกิดข้อผิดพลาด: ' + err.message);
+                }
+            }
+
+            // Check session on load
+            document.addEventListener('DOMContentLoaded', function () {
+                const isLoggedIn = sessionStorage.getItem('isAdmin') === 'true';
+                if (isLoggedIn) {
+                    showMainContent();
+                }
+
+                // Enter key for login
+                const pwdInput = document.getElementById('passwordInput');
+                if (pwdInput) {
+                    pwdInput.addEventListener('keypress', function (e) {
+                        if (e.key === 'Enter') doLogin();
+                    });
+                }
+            });
+
+            // Expose functions
+            window.doLogin = doLogin;
+            window.logout = logout;
+            window.showAddModal = showAddModal;
+            window.editDept = editDept;
+            window.hideModal = hideModal;
+            window.saveDept = saveDept;
+            window.deleteDept = deleteDept;
+        })();
     </script>
 </body>
 
