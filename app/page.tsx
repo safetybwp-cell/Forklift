@@ -123,7 +123,7 @@ export default function RequestForm() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             service_id: 'service_nosm7gr',
-                            template_id: 'template_5w71ck9', // Use no-button template
+                            template_id: 'template_nxjk9hg', // Info Template (แจ้งเตือนเฉยๆ)
                             user_id: 'Q7ihBzmKWUYOHHmL2',
                             template_params: {
                                 to_email: formData.requesterEmail,

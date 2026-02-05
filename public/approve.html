@@ -882,10 +882,13 @@
                     // Send email notification
                     if (emailRecipient) {
                         try {
-                            // Use different templates based on recipient
+                            // Use logic for 2-template limit
+                            // Template 1 (5w71ck9): ACTION (มีปุ่มอนุมัติ) -> ใช้สำหรับส่งหา ผจก.แผนก และ ผจก.คลัง
+                            // Template 2 (nxjk9hg): INFO (แจ้งเตือนเฉยๆ) -> ใช้สำหรับส่งหา ผู้ขอ (ยืนยัน/อนุมัติเสร็จ)
+
                             const templateId = emailTemplate === 'แจ้งผู้ขอ'
-                                ? 'template_FINAL_NEW'  // <--- ใส่ Template ID ใหม่ตรงนี้ (แจ้งผู้ขอว่าอนุมัติแล้ว)
-                                : 'template_nxjk9hg';   // Warehouse approval (with approval button)
+                                ? 'template_nxjk9hg'  // Info Template (ผู้ใช้ต้องไปลบปุ่มออกใน EmailJS)
+                                : 'template_5w71ck9'; // Action Template (ใช้ร่วมกันกับหน้า page.tsx)
 
                             const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                                 method: 'POST',
