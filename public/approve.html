@@ -538,6 +538,12 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="/config.js"></script>
     <script>
+        // ============================================
+        // 📧 Initialize EmailJS
+        // ============================================
+        emailjs.init('Q7ihBzmKWUYOHHmL2');
+        console.log('✅ EmailJS initialized successfully');
+
         // Start script execution
         (function () {
             // Load Supabase config from config.js
@@ -921,44 +927,40 @@
                                 // หัวหน้าแผนกอนุมัติ → ส่งหาผู้จัดการคลัง
                                 emailConfig = {
                                     to_name: 'ผู้จัดการคลัง',
-                                    message: 'มีคำขอใช้รถ Forklift รอการอนุมัติจากท่าน',
-                                    status: 'รอผู้จัดการคลังอนุมัติ',
-                                    button_text: '🔐 เข้าสู่ระบบอนุมัติ',
-                                    button_url: 'https://forklift-brown.vercel.app/approve.html'
+                                    status: 'ผู้จัดการแผนกอนุมัติแล้ว - รอผู้จัดการคลังอนุมัติ'
                                 };
                             } else if (currentUserRole === 'warehouse') {
                                 // ผู้จัดการคลังอนุมัติ → ส่งกลับผู้ขอ
                                 emailConfig = {
                                     to_name: currentRequest.requester_name,
-                                    message: 'คำขอใช้รถ Forklift ของท่านได้รับการอนุมัติแล้ว',
-                                    status: 'อนุมัติแล้ว - พร้อมใช้งาน',
-                                    button_text: '📋 ดูรายละเอียด',
-                                    button_url: 'https://forklift-brown.vercel.app/'
+                                    status: 'อนุมัติครบถ้วน - กรุณาติดต่อแผนกคลังเพื่อรับรถ'
                                 };
                             }
 
+                            // เตรียมข้อมูลสำหรับส่งอีเมล
+                            const emailParams = {
+                                to_email: emailRecipient,
+                                to_name: emailConfig.to_name,
+                                requester_name: currentRequest.requester_name,
+                                department: currentRequest.department,
+                                objective: currentRequest.objective,
+                                start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
+                                end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
+                                status: emailConfig.status
+                            };
+
                             console.log('📨 [DEBUG] Sending email...');
+                            console.log('   Service ID:', 'service_nosm7gr');
+                            console.log('   Template ID:', 'template_nxjk9hg');
                             console.log('   To:', emailRecipient);
                             console.log('   Recipient:', emailConfig.to_name);
+                            console.log('   Full params:', JSON.stringify(emailParams, null, 2));
 
                             // ส่งอีเมลผ่าน EmailJS SDK (ใช้ template เดียว!)
                             const response = await emailjs.send(
                                 'service_nosm7gr',
-                                'template_nxjk9hg',  // ✅ ใช้ template ID ที่ถูกต้อง!
-                                {
-                                    to_email: emailRecipient,
-                                    to_name: emailConfig.to_name,
-                                    message: emailConfig.message,
-                                    requester_name: currentRequest.requester_name,
-                                    department: currentRequest.department,
-                                    objective: currentRequest.objective,
-                                    start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
-                                    end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
-                                    status: emailConfig.status,
-                                    button_text: emailConfig.button_text,
-                                    button_url: emailConfig.button_url
-                                },
-                                'Q7ihBzmKWUYOHHmL2'
+                                'template_nxjk9hg',
+                                emailParams
                             );
 
                             console.log('✅ [DEBUG] EmailJS Response:', response);
