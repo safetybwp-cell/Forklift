@@ -543,6 +543,7 @@
             let currentUserRole = ''; // 'warehouse' or 'head'
             let currentUserDept = ''; // Department name
             let allRequests = [];
+            let historyRequests = []; // For history tab
             let currentRequest = null;
 
             // Check session on load
@@ -718,8 +719,12 @@
 
             // Detail Modal
             function openDetail(id) {
-                currentRequest = allRequests.find(r => r.id === id);
-                if (!currentRequest) return;
+                // Search in both pending and history arrays
+                currentRequest = allRequests.find(r => r.id === id) || historyRequests.find(r => r.id === id);
+                if (!currentRequest) {
+                    console.error('Request not found:', id);
+                    return;
+                }
 
                 const modalBody = document.getElementById('modalBody');
                 const modalFooter = document.getElementById('modalFooter');
@@ -771,11 +776,27 @@
                     ` : ''}
                 `;
 
-                modalFooter.innerHTML = `
-                    <button class="btn btn-outline" onclick="window.hideModal()">ปิด</button>
-                    <button class="btn btn-danger" onclick="window.rejectRequest()">❌ ไม่อนุมัติ</button>
-                    <button class="btn btn-primary" onclick="window.approveRequest()">✅ อนุมัติ</button>
-                `;
+                // Show/hide action buttons based on user role and status
+                const isCompleted = ['warehouse_approved', 'rejected'].includes(currentRequest.status);
+
+                if (isCompleted) {
+                    // History records - view only
+                    modalFooter.innerHTML = `
+                        <button onclick="window.hideModal()" class="btn btn-outline">ปิด</button>
+                    `;
+                } else if (currentRequest.status === 'pending' && currentUserRole === 'head') {
+                    modalFooter.innerHTML = `
+                        <button onclick="window.approveRequest()" class="btn btn-primary">อนุมัติ</button>
+                        <button onclick="window.rejectRequest()" class="btn btn-danger">ไม่อนุมัติ</button>
+                        <button onclick="window.hideModal()" class="btn btn-outline">ปิด</button>
+                    `;
+                } else if (currentRequest.status === 'dept_manager_approved' && currentUserRole === 'warehouse') {
+                    modalFooter.innerHTML = `
+                        <button onclick="window.approveRequest()" class="btn btn-primary">อนุมัติ</button>
+                        <button onclick="window.rejectRequest()" class="btn btn-danger">ไม่อนุมัติ</button>
+                        <button onclick="window.hideModal()" class="btn btn-outline">ปิด</button>
+                    `;
+                }
 
                 document.getElementById('detailModal').classList.add('show');
             }
@@ -937,6 +958,7 @@
                     }
 
                     tbody.innerHTML = '';
+                    historyRequests = data; // Store for openDetail
 
                     data.forEach(req => {
                         const row = document.createElement('tr');
