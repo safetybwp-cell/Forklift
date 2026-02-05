@@ -914,54 +914,60 @@
                     // Send email notification
                     if (emailRecipient) {
                         try {
-                            // Use logic for 2-template limit
-                            // Template 1 (5w71ck9): ACTION (มีปุ่มอนุมัติ) -> ใช้สำหรับส่งหา ผจก.แผนก และ ผจก.คลัง
-                            // Template 2 (nxjk9hg): INFO (แจ้งเตือนเฉยๆ) -> ใช้สำหรับส่งหา ผู้ขอ (ยืนยัน/อนุมัติเสร็จ)
+                            // กำหนด email configuration ตาม role
+                            let emailConfig = {};
 
-                            const templateId = emailTemplate === 'แจ้งผู้ขอ'
-                                ? 'template_nxjk9hg'  // Info Template
-                                : 'template_5w71ck9'; // Action Template
+                            if (currentUserRole === 'head') {
+                                // หัวหน้าแผนกอนุมัติ → ส่งหาผู้จัดการคลัง
+                                emailConfig = {
+                                    to_name: 'ผู้จัดการคลัง',
+                                    message: 'มีคำขอใช้รถ Forklift รอการอนุมัติจากท่าน',
+                                    status: 'รอผู้จัดการคลังอนุมัติ',
+                                    button_text: '🔐 เข้าสู่ระบบอนุมัติ',
+                                    button_url: 'https://forklift-brown.vercel.app/approve.html'
+                                };
+                            } else if (currentUserRole === 'warehouse') {
+                                // ผู้จัดการคลังอนุมัติ → ส่งกลับผู้ขอ
+                                emailConfig = {
+                                    to_name: currentRequest.requester_name,
+                                    message: 'คำขอใช้รถ Forklift ของท่านได้รับการอนุมัติแล้ว',
+                                    status: 'อนุมัติแล้ว - พร้อมใช้งาน',
+                                    button_text: '📋 ดูรายละเอียด',
+                                    button_url: 'https://forklift-brown.vercel.app/'
+                                };
+                            }
 
-                            console.log('📨 [DEBUG] Sending email via EmailJS...');
-                            console.log('   Template ID:', templateId);
+                            console.log('📨 [DEBUG] Sending email...');
                             console.log('   To:', emailRecipient);
-                            console.log('   Type:', emailTemplate);
+                            console.log('   Recipient:', emailConfig.to_name);
 
-                            try {
-                                // ✅ ใช้ emailjs.send() แทน fetch API เพื่อส่งอีเมลโดยตรง
-                                const emailParams = {
-                                    to_email: emailRecipient,  // ผู้รับ
-                                    to_name: emailTemplate === 'แจ้งผู้ขอ' ? currentRequest.requester_name : 'ผู้จัดการคลัง',
+                            // ส่งอีเมลผ่าน EmailJS SDK (ใช้ template เดียว!)
+                            const response = await emailjs.send(
+                                'service_nosm7gr',
+                                'template_5w71ck9',  // ✅ ใช้ template เดียวจบ!
+                                {
+                                    to_email: emailRecipient,
+                                    to_name: emailConfig.to_name,
+                                    message: emailConfig.message,
                                     requester_name: currentRequest.requester_name,
                                     department: currentRequest.department,
                                     objective: currentRequest.objective,
                                     start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
                                     end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
-                                    status: newStatus === 'warehouse_approved' ? 'อนุมัติแล้ว - พร้อมใช้งาน' : 'รอผู้จัดการคลังอนุมัติ',
-                                    approval_link: 'https://forklift-brown.vercel.app/approve.html'
-                                };
+                                    status: emailConfig.status,
+                                    button_text: emailConfig.button_text,
+                                    button_url: emailConfig.button_url
+                                },
+                                'Q7ihBzmKWUYOHHmL2'
+                            );
 
-                                console.log('📦 [DEBUG] Email params:', emailParams);
+                            console.log('✅ [DEBUG] EmailJS Response:', response);
+                            console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ');
+                            alert(`✅ อนุมัติและส่งอีเมลแจ้ง ${emailConfig.to_name} เรียบร้อยแล้ว`);
 
-                                // ส่งอีเมลผ่าน EmailJS SDK
-                                const response = await emailjs.send(
-                                    'service_nosm7gr',  // Service ID
-                                    templateId,          // Template ID
-                                    emailParams,         // Parameters
-                                    'Q7ihBzmKWUYOHHmL2'  // Public Key
-                                );
-
-                                console.log('✅ [DEBUG] EmailJS Response:', response);
-                                console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (Template:', templateId, ')');
-                                alert(`✅ อนุมัติและส่งอีเมลแจ้ง ${emailTemplate} เรียบร้อยแล้ว`);
-
-                            } catch (emailError) {
-                                console.error('❌ [DEBUG] EmailJS Error:', emailError);
-                                alert(`⚠️ อนุมัติสำเร็จ แต่ส่งอีเมลไม่ผ่าน: ${emailError.text || emailError.message}`);
-                            }
                         } catch (emailError) {
-                            console.error('⚠️ ส่งอีเมลแจ้งเตือนไม่สำเร็จ:', emailError);
-                            // ไม่ throw error เพราะการอนุมัติสำเร็จแล้ว
+                            console.error('❌ [DEBUG] EmailJS Error:', emailError);
+                            alert(`⚠️ อนุมัติสำเร็จ แต่ส่งอีเมลไม่ผ่าน: ${emailError.text || emailError.message}`);
                         }
                     }
 
