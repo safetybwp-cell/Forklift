@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>อนุมัติคำขอใช้รถ Forklift</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -429,6 +431,7 @@
                     </div>
                 </div>
                 <div class="navbar-actions">
+                    <button onclick="window.exportCurrentView()" class="btn btn-outline btn-sm">📊 Export Excel</button>
                     <button onclick="window.refreshData()" class="btn btn-outline btn-sm">🔄 รีเฟรช</button>
                     <button onclick="window.logout()" class="btn btn-danger btn-sm">ออก</button>
                 </div>
@@ -750,6 +753,10 @@
                             <strong>สถานะ</strong>
                             <span>${getStatusBadge(currentRequest.status)}</span>
                         </div>
+                        <div class="info-item">
+                            <strong>เวลาที่สร้างคำขอ</strong>
+                            <span style="color: #6b7280; font-size: 14px;">${new Date(currentRequest.created_at).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        </div>
                     </div>
 
                     <div class="info-item mb-3">
@@ -985,6 +992,85 @@
                 }
             }
 
+            // Export to Excel
+            function getStatusText(status) {
+                const statuses = {
+                    'pending': 'รอผู้จัดการแผนกอนุมัติ',
+                    'dept_manager_approved': 'ผู้จัดการแผนกอนุมัติแล้ว',
+                    'warehouse_approved': 'อนุมัติเรียบร้อย',
+                    'rejected': 'ไม่อนุมัติ'
+                };
+                return statuses[status] || status;
+            }
+
+            function exportToExcel(data, filename) {
+                if (!data || data.length === 0) {
+                    alert('ไม่มีข้อมูลสำหรับ Export');
+                    return;
+                }
+
+                // Prepare data
+                const ws_data = [
+                    ['เวลาที่สร้าง', 'ผู้ขอ', 'แผนก', 'วัตถุประสงค์', 'เวลาเริ่มใช้', 'เวลาคืน', 'สถานะ', 'Email'],
+                    ...data.map(r => [
+                        new Date(r.created_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }),
+                        r.requester_name,
+                        r.department,
+                        r.objective,
+                        new Date(r.start_time).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }),
+                        new Date(r.end_time).toLocaleString('th-TH', { timeStyle: 'short' }),
+                        getStatusText(r.status),
+                        r.requester_email || '-'
+                    ])
+                ];
+
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+                // Auto-filter
+                ws['!autofilter'] = { ref: `A1:H${data.length + 1}` };
+
+                // Column widths
+                ws['!cols'] = [
+                    { wch: 18 }, // Created
+                    { wch: 15 }, // Name
+                    { wch: 12 }, // Dept
+                    { wch: 30 }, // Objective
+                    { wch: 18 }, // Start
+                    { wch: 12 }, // End
+                    { wch: 20 }, // Status
+                    { wch: 25 }  // Email
+                ];
+
+                // Header styling (bold)
+                const headerRange = XLSX.utils.decode_range(ws['!ref']);
+                for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+                    const cellAddress = { c: col, r: 0 };
+                    const cellRef = XLSX.utils.encode_cell(cellAddress);
+                    if (!ws[cellRef]) continue;
+                    ws[cellRef].s = { font: { bold: true } };
+                }
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Forklift Requests');
+
+                // Download file
+                const date = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `${filename}_${date}.xlsx`);
+
+                alert(`✅ Export สำเร็จ!\nไฟล์: ${filename}_${date}.xlsx`);
+            }
+
+            function exportCurrentView() {
+                const currentTab = document.getElementById('tabHistory').classList.contains('active') ? 'history' : 'pending';
+
+                if (currentTab === 'pending') {
+                    exportToExcel(allRequests, 'Forklift_รออนุมัติ');
+                } else {
+                    exportToExcel(historyRequests, 'Forklift_ประวัติ');
+                }
+            }
+
             // Expose functions to window for onclick handlers
             window.doLogin = doLogin;
             window.logout = logout;
@@ -994,6 +1080,7 @@
             window.approveRequest = approveRequest;
             window.rejectRequest = rejectRequest;
             window.switchTab = switchTab;
+            window.exportCurrentView = exportCurrentView;
         })();
     </script>
 </body>
