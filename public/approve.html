@@ -884,8 +884,8 @@
                         try {
                             // Use different templates based on recipient
                             const templateId = emailTemplate === 'แจ้งผู้ขอ'
-                                ? 'template_5w71ck9'  // Final completion (no approval button)
-                                : 'template_nxjk9hg'; // Warehouse approval (with approval button)
+                                ? 'template_FINAL_NEW'  // <--- ใส่ Template ID ใหม่ตรงนี้ (แจ้งผู้ขอว่าอนุมัติแล้ว)
+                                : 'template_nxjk9hg';   // Warehouse approval (with approval button)
 
                             const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                                 method: 'POST',
