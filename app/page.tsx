@@ -116,29 +116,7 @@ export default function RequestForm() {
                     })
                 })
 
-                // Send Confirmation Email to Requester
-                if (formData.requesterEmail) {
-                    await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            service_id: 'service_nosm7gr',
-                            template_id: 'template_nxjk9hg', // Info Template (แจ้งเตือนเฉยๆ)
-                            user_id: 'Q7ihBzmKWUYOHHmL2',
-                            template_params: {
-                                to_email: formData.requesterEmail,
-                                to_name: formData.requesterName,
-                                requester_name: formData.requesterName,
-                                department: formData.department,
-                                objective: formData.objective,
-                                start_time: new Date(formData.startTime).toLocaleString('th-TH'),
-                                end_time: new Date(formData.endTime).toLocaleString('th-TH'),
-                                status: 'ได้รับคำขอแล้ว - รอผู้จัดการแผนกอนุมัติ',
-                                approval_link: 'https://forklift-brown.vercel.app/approve.html'
-                            }
-                        })
-                    })
-                }
+                // Confirmation email removed as per user request (only final approval email needed)
 
                 console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (ผจก. + ผู้ขอ)')
             } catch (emailError) {
