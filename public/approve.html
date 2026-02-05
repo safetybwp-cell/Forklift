@@ -887,7 +887,7 @@
                                 ? 'template_5w71ck9'  // Final completion (no approval button)
                                 : 'template_nxjk9hg'; // Warehouse approval (with approval button)
 
-                            await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                            const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -907,7 +907,15 @@
                                     }
                                 })
                             });
-                            console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (Template:', templateId, ')');
+
+                            if (emailResponse.ok) {
+                                console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (Template:', templateId, ')');
+                                alert(`✅ อนุมัติและส่งอีเมลแจ้ง ${emailTemplate} เรียบร้อยแล้ว`);
+                            } else {
+                                const errorText = await emailResponse.text();
+                                console.error('❌ EmailJS Error:', errorText);
+                                alert(`⚠️ อนุมัติสำเร็จ แต่ส่งอีเมลไม่ผ่าน: ${errorText}`);
+                            }
                         } catch (emailError) {
                             console.error('⚠️ ส่งอีเมลแจ้งเตือนไม่สำเร็จ:', emailError);
                             // ไม่ throw error เพราะการอนุมัติสำเร็จแล้ว
