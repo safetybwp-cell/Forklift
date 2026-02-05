@@ -8,6 +8,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <!-- SheetJS for Excel Export -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script>
+        // ============================================
+        // ⚙️ การตั้งค่า (Configuration)
+        // ============================================
+        // 📧 อีเมลผู้จัดการคลัง (สำหรับรับแจ้งเตือนเมื่อหัวหน้าแผนกอนุมัติ)
+        // กรุณาเปลี่ยนเป็นอีเมลจริงของผู้จัดการคลัง
+        const WAREHOUSE_MANAGER_EMAIL = 'jakkidmarat@gmail.com';
+        // ============================================
+    </script>
     <style>
         * {
             margin: 0;
@@ -843,15 +852,16 @@
                     if (currentUserRole === 'head') {
                         newStatus = 'dept_manager_approved';
 
-                        // Get warehouse manager email from Warehouse department (separate central warehouse)
-                        const { data: warehouseDept } = await supabase
-                            .from('departments')
-                            .select('manager_email, warehouse_manager_email')
-                            .eq('name', 'Warehouse')
-                            .single();
+                        // --------------------------------------------------------
+                        // แจ้งเตือน: ผู้จัดการคลัง (ใช้ Email ที่ตั้งค่าไว้ข้างบน)
+                        // --------------------------------------------------------
+                        emailRecipient = WAREHOUSE_MANAGER_EMAIL;
 
-                        // Use manager_email from Warehouse dept (since Warehouse is a department itself)
-                        emailRecipient = warehouseDept?.manager_email || warehouseDept?.warehouse_manager_email || '';
+                        if (!emailRecipient) {
+                            alert('⚠️ ไม่พบการตั้งค่าอีเมลผู้จัดการคลัง (WAREHOUSE_MANAGER_EMAIL)');
+                            return; // หยุดการทำงานถ้าไม่มีอีเมล
+                        }
+
                         emailTemplate = 'แจ้งผู้จัดการคลัง';
 
                     } else if (currentUserRole === 'warehouse') {
