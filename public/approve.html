@@ -535,6 +535,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="/config.js"></script>
     <script>
         // Start script execution
@@ -918,20 +919,18 @@
                             // Template 2 (nxjk9hg): INFO (แจ้งเตือนเฉยๆ) -> ใช้สำหรับส่งหา ผู้ขอ (ยืนยัน/อนุมัติเสร็จ)
 
                             const templateId = emailTemplate === 'แจ้งผู้ขอ'
-                                ? 'template_nxjk9hg'  // Info Template (ผู้ใช้ต้องไปลบปุ่มออกใน EmailJS)
-                                : 'template_5w71ck9'; // Action Template (ใช้ร่วมกันกับหน้า page.tsx)
+                                ? 'template_nxjk9hg'  // Info Template
+                                : 'template_5w71ck9'; // Action Template
 
                             console.log('📨 [DEBUG] Sending email via EmailJS...');
                             console.log('   Template ID:', templateId);
                             console.log('   To:', emailRecipient);
                             console.log('   Type:', emailTemplate);
 
-                            const emailPayload = {
-                                service_id: 'service_nosm7gr',
-                                template_id: templateId,
-                                user_id: 'Q7ihBzmKWUYOHHmL2',
-                                template_params: {
-                                    to_email: emailRecipient,
+                            try {
+                                // ✅ ใช้ emailjs.send() แทน fetch API เพื่อส่งอีเมลโดยตรง
+                                const emailParams = {
+                                    to_email: emailRecipient,  // ผู้รับ
                                     to_name: emailTemplate === 'แจ้งผู้ขอ' ? currentRequest.requester_name : 'ผู้จัดการคลัง',
                                     requester_name: currentRequest.requester_name,
                                     department: currentRequest.department,
@@ -940,24 +939,25 @@
                                     end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
                                     status: newStatus === 'warehouse_approved' ? 'อนุมัติแล้ว - พร้อมใช้งาน' : 'รอผู้จัดการคลังอนุมัติ',
                                     approval_link: 'https://forklift-brown.vercel.app/approve.html'
-                                }
-                            };
+                                };
 
-                            console.log('📦 [DEBUG] Email payload:', emailPayload);
+                                console.log('📦 [DEBUG] Email params:', emailParams);
 
-                            const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(emailPayload)
-                            });
+                                // ส่งอีเมลผ่าน EmailJS SDK
+                                const response = await emailjs.send(
+                                    'service_nosm7gr',  // Service ID
+                                    templateId,          // Template ID
+                                    emailParams,         // Parameters
+                                    'Q7ihBzmKWUYOHHmL2'  // Public Key
+                                );
 
-                            if (emailResponse.ok) {
+                                console.log('✅ [DEBUG] EmailJS Response:', response);
                                 console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (Template:', templateId, ')');
                                 alert(`✅ อนุมัติและส่งอีเมลแจ้ง ${emailTemplate} เรียบร้อยแล้ว`);
-                            } else {
-                                const errorText = await emailResponse.text();
-                                console.error('❌ EmailJS Error:', errorText);
-                                alert(`⚠️ อนุมัติสำเร็จ แต่ส่งอีเมลไม่ผ่าน: ${errorText}`);
+
+                            } catch (emailError) {
+                                console.error('❌ [DEBUG] EmailJS Error:', emailError);
+                                alert(`⚠️ อนุมัติสำเร็จ แต่ส่งอีเมลไม่ผ่าน: ${emailError.text || emailError.message}`);
                             }
                         } catch (emailError) {
                             console.error('⚠️ ส่งอีเมลแจ้งเตือนไม่สำเร็จ:', emailError);
