@@ -853,12 +853,25 @@
                         newStatus = 'dept_manager_approved';
 
                         // --------------------------------------------------------
-                        // แจ้งเตือน: ผู้จัดการคลัง (ใช้ Email ที่ตั้งค่าไว้ข้างบน)
+                        // แจ้งเตือน: ผู้จัดการคลัง (ดึงจาก Database ที่ตั้งค่าผ่าน Admin)
                         // --------------------------------------------------------
-                        emailRecipient = WAREHOUSE_MANAGER_EMAIL;
+
+                        // ดึงข้อมูลอีเมลจากตาราง Departments (Row: Warehouse)
+                        const { data: warehouseDept } = await supabase
+                            .from('departments')
+                            .select('warehouse_manager_email')
+                            .eq('name', 'Warehouse')
+                            .single();
+
+                        emailRecipient = warehouseDept?.warehouse_manager_email || '';
+
+                        // Fallback: ถ้าใน DB ว่าง ให้ใช้ค่า Default (เผื่อไว้)
+                        if (!emailRecipient && typeof WAREHOUSE_MANAGER_EMAIL !== 'undefined') {
+                            emailRecipient = WAREHOUSE_MANAGER_EMAIL;
+                        }
 
                         if (!emailRecipient) {
-                            alert('⚠️ ไม่พบการตั้งค่าอีเมลผู้จัดการคลัง (WAREHOUSE_MANAGER_EMAIL)');
+                            alert('⚠️ ไม่พบอีเมลผู้จัดการคลัง (กรุณาตั้งค่าในหน้า Admin)');
                             return; // หยุดการทำงานถ้าไม่มีอีเมล
                         }
 
