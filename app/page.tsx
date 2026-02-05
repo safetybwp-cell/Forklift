@@ -100,7 +100,7 @@ export default function RequestForm() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         service_id: 'service_nosm7gr',
-                        template_id: 'template_5w71ck9',
+                        template_id: 'template_nxjk9hg',
                         user_id: 'Q7ihBzmKWUYOHHmL2',
                         template_params: {
                             to_email: deptData.manager_email,
@@ -110,8 +110,7 @@ export default function RequestForm() {
                             objective: formData.objective,
                             start_time: new Date(formData.startTime).toLocaleString('th-TH'),
                             end_time: new Date(formData.endTime).toLocaleString('th-TH'),
-                            status: 'รอผู้จัดการแผนกอนุมัติ',
-                            approval_link: 'https://forklift-brown.vercel.app/approve.html'
+                            status: 'รอผู้จัดการแผนกอนุมัติ'
                         }
                     })
                 })
