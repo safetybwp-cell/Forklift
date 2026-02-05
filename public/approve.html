@@ -860,14 +860,14 @@
                         console.log('🔍 [DEBUG] Fetching warehouse email from database...');
                         const { data: warehouseDept, error: warehouseError } = await supabase
                             .from('departments')
-                            .select('warehouse_manager_email')
+                            .select('manager_email')
                             .eq('name', 'Warehouse')
                             .single();
 
                         console.log('📦 [DEBUG] Warehouse dept data:', warehouseDept);
                         console.log('❌ [DEBUG] Warehouse error:', warehouseError);
 
-                        emailRecipient = warehouseDept?.warehouse_manager_email || '';
+                        emailRecipient = warehouseDept?.manager_email || '';
 
                         // Fallback: ถ้าใน DB ว่าง ให้ใช้ค่า Default (เผื่อไว้)
                         if (!emailRecipient && typeof WAREHOUSE_MANAGER_EMAIL !== 'undefined') {
