@@ -824,12 +824,17 @@
                     // Send email notification
                     if (emailRecipient) {
                         try {
+                            // Use different templates based on recipient
+                            const templateId = emailTemplate === 'แจ้งผู้ขอ'
+                                ? 'template_5w71ck9'  // Final completion (no approval button)
+                                : 'template_nxjk9hg'; // Warehouse approval (with approval button)
+
                             await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     service_id: 'service_nosm7gr',
-                                    template_id: 'template_nxjk9hg', // Approval notification template
+                                    template_id: templateId,
                                     user_id: 'Q7ihBzmKWUYOHHmL2',
                                     template_params: {
                                         to_email: emailRecipient,
@@ -844,7 +849,7 @@
                                     }
                                 })
                             });
-                            console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ');
+                            console.log('✅ ส่งอีเมลแจ้งเตือนสำเร็จ (Template:', templateId, ')');
                         } catch (emailError) {
                             console.error('⚠️ ส่งอีเมลแจ้งเตือนไม่สำเร็จ:', emailError);
                             // ไม่ throw error เพราะการอนุมัติสำเร็จแล้ว
