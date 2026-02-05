@@ -857,11 +857,15 @@
                         // --------------------------------------------------------
 
                         // ดึงข้อมูลอีเมลจากตาราง Departments (Row: Warehouse)
-                        const { data: warehouseDept } = await supabase
+                        console.log('🔍 [DEBUG] Fetching warehouse email from database...');
+                        const { data: warehouseDept, error: warehouseError } = await supabase
                             .from('departments')
                             .select('warehouse_manager_email')
                             .eq('name', 'Warehouse')
                             .single();
+
+                        console.log('📦 [DEBUG] Warehouse dept data:', warehouseDept);
+                        console.log('❌ [DEBUG] Warehouse error:', warehouseError);
 
                         emailRecipient = warehouseDept?.warehouse_manager_email || '';
 
@@ -870,7 +874,10 @@
                             emailRecipient = WAREHOUSE_MANAGER_EMAIL;
                         }
 
+                        console.log('📧 [DEBUG] Warehouse email recipient:', emailRecipient);
+
                         if (!emailRecipient) {
+                            console.error('❌ [DEBUG] No warehouse email found!');
                             alert('⚠️ ไม่พบอีเมลผู้จัดการคลัง (กรุณาตั้งค่าในหน้า Admin)');
                             return; // หยุดการทำงานถ้าไม่มีอีเมล
                         }
@@ -914,25 +921,34 @@
                                 ? 'template_nxjk9hg'  // Info Template (ผู้ใช้ต้องไปลบปุ่มออกใน EmailJS)
                                 : 'template_5w71ck9'; // Action Template (ใช้ร่วมกันกับหน้า page.tsx)
 
+                            console.log('📨 [DEBUG] Sending email via EmailJS...');
+                            console.log('   Template ID:', templateId);
+                            console.log('   To:', emailRecipient);
+                            console.log('   Type:', emailTemplate);
+
+                            const emailPayload = {
+                                service_id: 'service_nosm7gr',
+                                template_id: templateId,
+                                user_id: 'Q7ihBzmKWUYOHHmL2',
+                                template_params: {
+                                    to_email: emailRecipient,
+                                    to_name: emailTemplate === 'แจ้งผู้ขอ' ? currentRequest.requester_name : 'ผู้จัดการคลัง',
+                                    requester_name: currentRequest.requester_name,
+                                    department: currentRequest.department,
+                                    objective: currentRequest.objective,
+                                    start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
+                                    end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
+                                    status: newStatus === 'warehouse_approved' ? 'อนุมัติแล้ว - พร้อมใช้งาน' : 'รอผู้จัดการคลังอนุมัติ',
+                                    approval_link: 'https://forklift-brown.vercel.app/approve.html'
+                                }
+                            };
+
+                            console.log('📦 [DEBUG] Email payload:', emailPayload);
+
                             const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    service_id: 'service_nosm7gr',
-                                    template_id: templateId,
-                                    user_id: 'Q7ihBzmKWUYOHHmL2',
-                                    template_params: {
-                                        to_email: emailRecipient,
-                                        to_name: emailTemplate === 'แจ้งผู้ขอ' ? currentRequest.requester_name : 'ผู้จัดการคลัง',
-                                        requester_name: currentRequest.requester_name,
-                                        department: currentRequest.department,
-                                        objective: currentRequest.objective,
-                                        start_time: new Date(currentRequest.start_time).toLocaleString('th-TH'),
-                                        end_time: new Date(currentRequest.end_time).toLocaleString('th-TH'),
-                                        status: newStatus === 'warehouse_approved' ? 'อนุมัติแล้ว - พร้อมใช้งาน' : 'รอผู้จัดการคลังอนุมัติ',
-                                        approval_link: 'https://forklift-brown.vercel.app/approve.html'
-                                    }
-                                })
+                                body: JSON.stringify(emailPayload)
                             });
 
                             if (emailResponse.ok) {
