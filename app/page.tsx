@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Camera, Loader2, CheckCircle } from 'lucide-react'
+import { formatThaiDateTime } from '@/lib/utils'
 
 export default function RequestForm() {
     const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ export default function RequestForm() {
 
     useEffect(() => {
         const fetchDepts = async () => {
-            const { data } = await supabase.from('departments').select('name, manager_email')
+            const { data } = await supabase.from('departments').select('name, manager_email').order('name')
             if (data) setDeptList(data)
         }
         fetchDepts()
@@ -108,8 +109,8 @@ export default function RequestForm() {
                             requester_name: formData.requesterName,
                             department: formData.department,
                             objective: formData.objective,
-                            start_time: new Date(formData.startTime).toLocaleString('th-TH'),
-                            end_time: new Date(formData.endTime).toLocaleString('th-TH'),
+                            start_time: formatThaiDateTime(formData.startTime),
+                            end_time: formatThaiDateTime(formData.endTime),
                             status: 'รอผู้จัดการแผนกอนุมัติ'
                         }
                     })
@@ -300,20 +301,14 @@ export default function RequestForm() {
 
                 <div className="mt-6 text-center">
                     <a
-                        href="/approve.html"
+                        href="/dashboard"
                         className="text-primary hover:underline font-medium inline-block"
                     >
-                        🔐 เข้าสู่ระบบอนุมัติคำขอ (สำหรับผู้จัดการ)
-                    </a>
-                    <span className="mx-3 text-gray-400">|</span>
-                    <a
-                        href="/admin.html"
-                        className="text-purple-600 hover:underline font-medium inline-block"
-                    >
-                        ⚙️ Admin (จัดการแผนก)
+                        🔐 เข้าสู่ระบบอนุมัติคำขอ (สำหรับแผนก/คลัง/Admin)
                     </a>
                 </div>
             </div>
         </div>
     )
 }
+

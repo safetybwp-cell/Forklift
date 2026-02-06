@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, TruckIcon, Package, Clock, CheckCircle } from 'lucide-react'
+import { Loader2, TruckIcon, Package, Clock, CheckCircle, ArrowLeft } from 'lucide-react'
+import { formatThaiDateTime } from '@/lib/utils'
 
 type Request = {
     id: string
@@ -24,6 +25,17 @@ export default function WarehouseDashboard() {
     const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
     useEffect(() => {
+        // Security Check
+        const isStaff = sessionStorage.getItem('isStaff')
+        const role = sessionStorage.getItem('role')
+        const isAdmin = sessionStorage.getItem('isAdmin')
+
+        if ((!isStaff || role !== 'stock') && !isAdmin) {
+            alert('กรุณาเข้าสู่ระบบในฐานะผู้จัดการคลังสินค้า')
+            window.location.href = '/dashboard'
+            return
+        }
+
         fetchRequests()
     }, [])
 
@@ -71,8 +83,8 @@ export default function WarehouseDashboard() {
                             requester_name: req.requester_name,
                             department: req.department,
                             objective: req.objective,
-                            start_time: new Date(req.start_time).toLocaleString('th-TH'),
-                            end_time: new Date(req.end_time).toLocaleString('th-TH'),
+                            start_time: formatThaiDateTime(req.start_time),
+                            end_time: formatThaiDateTime(req.end_time),
                             status: '✅ อนุมัติครบถ้วน - กรุณาติดต่อรับรถ',
                             approver_name: 'ผู้จัดการคลังสินค้า'
                         }
@@ -89,7 +101,7 @@ export default function WarehouseDashboard() {
         } catch (error: any) {
             console.error(error)
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
-            fetchRequests()
+            // fetchRequests()
         }
         setProcessingId(null)
     }
@@ -110,7 +122,7 @@ export default function WarehouseDashboard() {
             setTimeout(() => setAlertMessage(null), 3000)
         } else {
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
-            fetchRequests()
+            // fetchRequests()
         }
         setProcessingId(null)
     }
@@ -129,9 +141,12 @@ export default function WarehouseDashboard() {
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-3xl font-bold text-green-800 flex items-center gap-3">
                         <Package className="w-8 h-8" />
-                        ส่วนสำหรับผู้จัดการคลังสินค้า (Step 2)
+                        อนุมัติคำขอ: ผจก.คลังสินค้า
                     </h1>
-                    <a href="/dashboard" className="text-gray-500 hover:text-gray-700">กลับหน้าหลัก</a>
+                    <a href="/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-gray-700">
+                        <ArrowLeft className="w-5 h-5" />
+                        ออกจากระบบ
+                    </a>
                 </div>
 
                 {requests.length === 0 ? (
@@ -156,12 +171,17 @@ export default function WarehouseDashboard() {
                                         <div className="flex gap-4 mt-3 text-sm text-gray-600">
                                             <span className="flex items-center gap-1">
                                                 <Clock className="w-4 h-4" />
-                                                เริ่ม: {new Date(req.start_time).toLocaleString('th-TH')}
+                                                เริ่ม: {formatThaiDateTime(req.start_time)}
                                             </span>
                                             <span>
-                                                ถึง: {new Date(req.end_time).toLocaleString('th-TH')}
+                                                ถึง: {formatThaiDateTime(req.end_time)}
                                             </span>
                                         </div>
+                                        {req.vehicle_image_url && (
+                                            <div className="mt-2">
+                                                <a href={req.vehicle_image_url} target="_blank" className="text-blue-500 text-xs underline">ดูรูปภาพรถ</a>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
@@ -188,3 +208,4 @@ export default function WarehouseDashboard() {
         </div>
     )
 }
+

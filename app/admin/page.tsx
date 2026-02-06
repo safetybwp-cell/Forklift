@@ -2,24 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, Trash2, Plus, ArrowLeft } from 'lucide-react'
+import { Loader2, Trash2, Plus, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 
 type Department = {
     id: string
     name: string
     manager_email: string
+    password?: string // Added
 }
 
 export default function AdminPage() {
     const [departments, setDepartments] = useState<Department[]>([])
     const [loading, setLoading] = useState(true)
-    const [newDept, setNewDept] = useState({ name: '', manager_email: '' })
+    const [newDept, setNewDept] = useState({ name: '', manager_email: '', password: '' })
     const [warehouseEmail, setWarehouseEmail] = useState('')
+    const [warehousePassword, setWarehousePassword] = useState('')
     const [warehouseId, setWarehouseId] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSavingWh, setIsSavingWh] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [editForm, setEditForm] = useState({ name: '', manager_email: '' })
+    const [editForm, setEditForm] = useState({ name: '', manager_email: '', password: '' })
+    const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({})
 
     useEffect(() => {
         // Security Check
@@ -46,6 +49,7 @@ export default function AdminPage() {
             const wh = data.find(d => d.name.toLowerCase().includes('warehouse') || d.name === 'คลังสินค้า')
             if (wh) {
                 setWarehouseEmail(wh.manager_email)
+                setWarehousePassword(wh.password || '')
                 setWarehouseId(wh.id)
             }
         }
@@ -56,14 +60,28 @@ export default function AdminPage() {
         setIsSavingWh(true)
         if (warehouseId) {
             // Update existing
-            const { error } = await supabase.from('departments').update({ manager_email: warehouseEmail }).eq('id', warehouseId)
-            if (!error) alert('บันทึก Email ผจก.คลัง เรียบร้อย!')
+            const { error } = await supabase
+                .from('departments')
+                .update({
+                    manager_email: warehouseEmail,
+                    password: warehousePassword
+                })
+                .eq('id', warehouseId)
+
+            if (!error) alert('บันทึกข้อมูลแผนกคลังสินค้า เรียบร้อย!')
             else alert('Error: ' + error.message)
         } else {
             // Create new if not exists
-            const { error } = await supabase.from('departments').insert({ name: 'Warehouse', manager_email: warehouseEmail })
+            const { error } = await supabase
+                .from('departments')
+                .insert({
+                    name: 'Warehouse',
+                    manager_email: warehouseEmail,
+                    password: warehousePassword
+                })
+
             if (!error) {
-                alert('สร้างแผนก Warehouse และบันทึก Email เรียบร้อย!')
+                alert('สร้างแผนก Warehouse และบันทึกข้อมูล เรียบร้อย!')
                 fetchDepartments()
             }
             else alert('Error: ' + error.message)
@@ -91,7 +109,8 @@ export default function AdminPage() {
             .from('departments')
             .update({
                 name: editForm.name,
-                manager_email: editForm.manager_email
+                manager_email: editForm.manager_email,
+                password: editForm.password
             })
             .eq('id', id)
 
@@ -111,13 +130,14 @@ export default function AdminPage() {
             .from('departments')
             .insert({
                 name: newDept.name,
-                manager_email: newDept.manager_email
+                manager_email: newDept.manager_email,
+                password: newDept.password
             })
 
         setIsSubmitting(false)
 
         if (!error) {
-            setNewDept({ name: '', manager_email: '' })
+            setNewDept({ name: '', manager_email: '', password: '' })
             fetchDepartments()
         } else {
             alert('เพิ่มไม่สำเร็จ: ' + error.message)
@@ -128,8 +148,13 @@ export default function AdminPage() {
         setEditingId(dept.id)
         setEditForm({
             name: dept.name,
-            manager_email: dept.manager_email
+            manager_email: dept.manager_email,
+            password: dept.password || ''
         })
+    }
+
+    const toggleShowPassword = (id: string) => {
+        setShowPassword(prev => ({ ...prev, [id]: !prev[id] }))
     }
 
     if (loading) {
@@ -142,25 +167,24 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen p-6 bg-gray-50">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800">🛠️ Admin: จัดการข้อมูลแผนก & Email</h1>
+                    <h1 className="text-3xl font-bold text-gray-800">🛠️ Admin: จัดการข้อมูลแผนก & รหัสผ่าน</h1>
                     <a href="/dashboard" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
                         <ArrowLeft className="w-5 h-5" />
                         กลับ Dashboard
                     </a>
                 </div>
 
-                {/* Warehouse Manager Email Config (Special Section) */}
+                {/* Warehouse Manager Config (Special Section) */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm p-6 mb-8">
                     <h2 className="text-xl font-semibold mb-2 text-blue-800 flex items-center gap-2">
-                        🏭 Email ผจก.คลังสินค้า (สำหรับอนุมัติ Step 2)
+                        🏭 ตั้งค่า (แผนกคลังสินค้า/Warehouse)
                     </h2>
                     <p className="text-sm text-blue-600 mb-4">
-                        ระบุ Email ของผู้จัดการคลังสินค้าที่จะเป็นผู้อนุมัติลำดับที่ 2 ของทุกคำขอ
-                        (ระบบจะบันทึกลงในแผนก "Warehouse" โดยอัตโนมัติ)
+                        แผนกนี้มีสิทธิ์พิเศษในการอนุมัติ Step 2 (ปล่อยรถ)
                     </p>
-                    <div className="flex gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div className="flex-1">
                             <label className="block text-sm font-medium text-blue-800 mb-1">Email ผจก.คลัง</label>
                             <input
@@ -171,12 +195,22 @@ export default function AdminPage() {
                                 onChange={(e) => setWarehouseEmail(e.target.value)}
                             />
                         </div>
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-blue-800 mb-1">รหัสผ่านเข้าใช้งาน</label>
+                            <input
+                                type="text"
+                                value={warehousePassword}
+                                placeholder="ตั้งรหัสผ่าน..."
+                                className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                onChange={(e) => setWarehousePassword(e.target.value)}
+                            />
+                        </div>
                         <button
                             onClick={handleSaveWarehouse}
                             disabled={isSavingWh}
-                            className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 h-[42px]"
                         >
-                            {isSavingWh ? 'กำลังบันทึก...' : 'บันทึก'}
+                            {isSavingWh ? 'กำลังบันทึก...' : 'บันทึกข้อมูล Warehouse'}
                         </button>
                     </div>
                 </div>
@@ -209,15 +243,25 @@ export default function AdminPage() {
                                 placeholder="manager@company.com"
                             />
                         </div>
+                        <div className="flex-1 w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">รหัสผ่าน</label>
+                            <input
+                                type="text"
+                                required
+                                value={newDept.password}
+                                onChange={(e) => setNewDept({ ...newDept, password: e.target.value })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="ตั้งรหัสผ่าน..."
+                            />
+                        </div>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                            className="w-full md:w-auto px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 h-[42px]"
                         >
-                            {isSubmitting ? '...' : 'เพิ่ม'}
+                            {isSubmitting ? '...' : 'ตรวจสอบ & เพิ่ม'}
                         </button>
                     </form>
-                    <p className="text-xs text-gray-500 mt-2">* สำหรับ "ผจก.คลัง" ให้แก้ไข Email ของแผนกที่ชื่อ <strong>Warehouse</strong> หรือ <strong>คลังสินค้า</strong></p>
                 </div>
 
                 {/* Departments List */}
@@ -227,13 +271,14 @@ export default function AdminPage() {
                             <tr>
                                 <th className="px-6 py-4 font-semibold text-gray-600">ชื่อแผนก</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600">Email ผจก.แผนก</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600">รหัสผ่าน</th>
                                 <th className="px-6 py-4 font-semibold text-gray-600 text-right">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
                             {departments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
                                         ยังไม่มีข้อมูล
                                     </td>
                                 </tr>
@@ -256,6 +301,13 @@ export default function AdminPage() {
                                                         onChange={(e) => setEditForm({ ...editForm, manager_email: e.target.value })}
                                                     />
                                                 </td>
+                                                <td className="px-6 py-4">
+                                                    <input
+                                                        className="w-full border rounded px-2 py-1"
+                                                        value={editForm.password}
+                                                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
                                                     <button onClick={() => handleUpdate(dept.id)} className="text-green-600 font-bold">บันทึก</button>
                                                     <button onClick={() => setEditingId(null)} className="text-gray-500">ยกเลิก</button>
@@ -265,6 +317,12 @@ export default function AdminPage() {
                                             <>
                                                 <td className="px-6 py-4 text-gray-800 font-medium">{dept.name}</td>
                                                 <td className="px-6 py-4 text-gray-600 font-mono text-sm">{dept.manager_email}</td>
+                                                <td className="px-6 py-4 text-gray-600 font-mono text-sm flex items-center gap-2">
+                                                    {showPassword[dept.id] ? dept.password : '••••••'}
+                                                    <button onClick={() => toggleShowPassword(dept.id)} className="text-gray-400 hover:text-gray-600">
+                                                        {showPassword[dept.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
+                                                </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button
                                                         onClick={() => startEdit(dept)}
@@ -291,3 +349,4 @@ export default function AdminPage() {
         </div>
     )
 }
+

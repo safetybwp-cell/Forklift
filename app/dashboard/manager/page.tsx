@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Loader2, TruckIcon, User, Clock, CheckCircle } from 'lucide-react'
+import { Loader2, TruckIcon, User, Clock, CheckCircle, ArrowLeft } from 'lucide-react'
+import { formatThaiDateTime } from '@/lib/utils'
+import { useSearchParams } from 'next/navigation'
 
 type Request = {
     id: string
@@ -22,18 +24,49 @@ export default function ManagerDashboard() {
     const [loading, setLoading] = useState(true)
     const [processingId, setProcessingId] = useState<string | null>(null)
     const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+    const [deptName, setDeptName] = useState('')
+
+    // Get dept_id from URL if present (though we mainly rely on session)
+    // Actually relying on session is safer for "auth", current URL param was just a hint in previous plan
+    // But let's check session primarily
 
     useEffect(() => {
-        fetchRequests()
+        // Security Check
+        const isStaff = sessionStorage.getItem('isStaff')
+        const role = sessionStorage.getItem('role')
+        const sessionDeptId = sessionStorage.getItem('deptId')
+        const sessionDeptName = sessionStorage.getItem('deptName')
+
+        if (!isStaff || role !== 'manager' || !sessionDeptId) {
+            // Allow Admin to bypass
+            const isAdmin = sessionStorage.getItem('isAdmin')
+            if (!isAdmin) {
+                alert('กรุณาเข้าสู่ระบบในฐานะผู้จัดการแผนก')
+                window.location.href = '/dashboard'
+                return
+            }
+        }
+
+        if (sessionDeptName) setDeptName(sessionDeptName)
+        fetchRequests(sessionDeptName) // Pass department name to filter
     }, [])
 
-    const fetchRequests = async () => {
+    const fetchRequests = async (filterDeptName: string | null) => {
         // Manager sees "pending" requests only (Step 1)
-        const { data, error } = await supabase
+        let query = supabase
             .from('requests')
             .select('*')
             .eq('status', 'pending') // Only pending requests for Step 1
             .order('created_at', { ascending: false })
+
+        // Filter by Department if not Admin (Admin sees all?)
+        // Let's strict it to the Department Manager's department
+        const isAdmin = sessionStorage.getItem('isAdmin')
+        if (!isAdmin && filterDeptName) {
+            query = query.eq('department', filterDeptName)
+        }
+
+        const { data, error } = await query
 
         if (!error && data) {
             setRequests(data)
@@ -59,22 +92,12 @@ export default function ManagerDashboard() {
             // 2. Fetch Warehouse Manager Email
             const { data: warehouseDept } = await supabase
                 .from('departments')
-                .select('warehouse_manager_email')
-                .eq('name', 'Warehouse')
+                .select('manager_email') // It is manager_email in schema, NOT warehouse_manager_email
+                .or('name.eq.Warehouse,name.eq.คลังสินค้า') // Find the warehouse dept
                 .single()
 
             // Fallback: If no specific warehouse email, try to find any dept with it or use a default
-            let whEmail = warehouseDept?.warehouse_manager_email
-
-            if (!whEmail) {
-                // Try fetching from the current request's department if configured there
-                const { data: currentDept } = await supabase
-                    .from('departments')
-                    .select('warehouse_manager_email')
-                    .eq('name', req.department)
-                    .single()
-                whEmail = currentDept?.warehouse_manager_email
-            }
+            let whEmail = warehouseDept?.manager_email
 
             if (whEmail) {
                 // 3. Send Email to Warehouse Manager
@@ -91,8 +114,8 @@ export default function ManagerDashboard() {
                             requester_name: req.requester_name,
                             department: req.department,
                             objective: req.objective,
-                            start_time: new Date(req.start_time).toLocaleString('th-TH'),
-                            end_time: new Date(req.end_time).toLocaleString('th-TH'),
+                            start_time: formatThaiDateTime(req.start_time),
+                            end_time: formatThaiDateTime(req.end_time),
                             status: 'ผ่านการอนุมัติจากผจก.แผนกแล้ว - รอคลังอนุมัติ'
                         }
                     })
@@ -108,7 +131,8 @@ export default function ManagerDashboard() {
         } catch (error: any) {
             console.error(error)
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
-            fetchRequests()
+            // Re-fetch if error to sync state
+            // fetchRequests() 
         }
         setProcessingId(null)
     }
@@ -129,7 +153,7 @@ export default function ManagerDashboard() {
             setTimeout(() => setAlertMessage(null), 3000)
         } else {
             setAlertMessage({ type: 'error', message: '❌ ผิดพลาด: ' + error.message })
-            fetchRequests()
+            // fetchRequests()
         }
         setProcessingId(null)
     }
@@ -148,9 +172,12 @@ export default function ManagerDashboard() {
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-3xl font-bold text-blue-800 flex items-center gap-3">
                         <User className="w-8 h-8" />
-                        ส่วนสำหรับผู้จัดการแผนก (Step 1)
+                        อนุมัติคำขอ: แผนก {deptName || '...'}
                     </h1>
-                    <a href="/dashboard" className="text-gray-500 hover:text-gray-700">กลับหน้าหลัก</a>
+                    <a href="/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-gray-700">
+                        <ArrowLeft className="w-5 h-5" />
+                        ออกจากระบบ
+                    </a>
                 </div>
 
                 {requests.length === 0 ? (
@@ -172,12 +199,17 @@ export default function ManagerDashboard() {
                                         <div className="flex gap-4 mt-3 text-sm text-gray-600">
                                             <span className="flex items-center gap-1">
                                                 <Clock className="w-4 h-4" />
-                                                เริ่ม: {new Date(req.start_time).toLocaleString('th-TH')}
+                                                เริ่ม: {formatThaiDateTime(req.start_time)}
                                             </span>
                                             <span>
-                                                ถึง: {new Date(req.end_time).toLocaleString('th-TH')}
+                                                ถึง: {formatThaiDateTime(req.end_time)}
                                             </span>
                                         </div>
+                                        {req.vehicle_image_url && (
+                                            <div className="mt-2">
+                                                <a href={req.vehicle_image_url} target="_blank" className="text-blue-500 text-xs underline">ดูรูปภาพรถ</a>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         <button
@@ -204,3 +236,4 @@ export default function ManagerDashboard() {
         </div>
     )
 }
+
