@@ -111,7 +111,9 @@ export default function RequestForm() {
                             objective: formData.objective,
                             start_time: formatThaiDateTime(formData.startTime),
                             end_time: formatThaiDateTime(formData.endTime),
-                            status: 'รอผู้จัดการแผนกอนุมัติ'
+                            status: 'รอผู้จัดการแผนกอนุมัติ',
+                            link: 'https://forklift-cag2.vercel.app/dashboard',
+                            approve_link: 'https://forklift-cag2.vercel.app/dashboard'
                         }
                     })
                 })

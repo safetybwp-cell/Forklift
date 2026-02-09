@@ -86,7 +86,8 @@ export default function WarehouseDashboard() {
                             start_time: formatThaiDateTime(req.start_time),
                             end_time: formatThaiDateTime(req.end_time),
                             status: '✅ อนุมัติครบถ้วน - กรุณาติดต่อรับรถ',
-                            approver_name: 'ผู้จัดการคลังสินค้า'
+                            approver_name: 'ผู้จัดการคลังสินค้า',
+                            link: 'https://forklift-cag2.vercel.app/dashboard' // Link for Requester to check status
                         }
                     })
                 })
