@@ -106,7 +106,7 @@ export default function ManagerDashboard() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         service_id: 'service_nosm7gr',
-                        template_id: 'template_5w71ck9', // Use Request Template (since Warehouse needs to approve too)
+                        template_id: 'template_nxjk9hg', // Use the correct existing template
                         user_id: 'Q7ihBzmKWUYOHHmL2',
                         template_params: {
                             to_email: whEmail,
