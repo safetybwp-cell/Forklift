@@ -78,7 +78,7 @@ export default function ManagerDashboard() {
         setProcessingId(id)
 
         // Optimistic Update
-        setRequests(prev => prev.filter(r => r.id !== id))
+        setRequests((prev) => prev.filter((r) => r.id !== id))
 
         try {
             // 1. Update DB Status
@@ -143,7 +143,7 @@ export default function ManagerDashboard() {
         if (!confirm('ยืนยันไม่อนุมัติ?')) return
         setProcessingId(id)
 
-        setRequests(prev => prev.filter(req => req.id !== id))
+        setRequests((prev) => prev.filter((req) => req.id !== id))
 
         const { error } = await supabase
             .from('requests')
