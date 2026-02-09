@@ -109,11 +109,16 @@ export default function RequestForm() {
                             requester_name: formData.requesterName,
                             department: formData.department,
                             objective: formData.objective,
+                            to_email: deptData.manager_email,
+                            to_name: 'ผู้จัดการแผนก',
+                            requester_name: formData.requesterName,
+                            department: formData.department,
+                            objective: formData.objective,
                             start_time: formatThaiDateTime(formData.startTime),
                             end_time: formatThaiDateTime(formData.endTime),
                             status: 'รอผู้จัดการแผนกอนุมัติ',
-                            link: 'https://forklift-cag2.vercel.app/dashboard',
-                            approve_link: 'https://forklift-cag2.vercel.app/dashboard'
+                            link: 'https://forklift-sage.vercel.app/',
+                            approve_link: 'https://forklift-sage.vercel.app/'
                         }
                     })
                 })

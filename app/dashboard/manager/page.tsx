@@ -117,8 +117,8 @@ export default function ManagerDashboard() {
                             start_time: formatThaiDateTime(req.start_time),
                             end_time: formatThaiDateTime(req.end_time),
                             status: 'ผ่านการอนุมัติจากผจก.แผนกแล้ว - รอคลังอนุมัติ',
-                            link: 'https://forklift-cag2.vercel.app/dashboard', // Link for Warehouse Manager
-                            approve_link: 'https://forklift-cag2.vercel.app/dashboard'
+                            link: 'https://forklift-sage.vercel.app/', // Link for Warehouse Manager
+                            approve_link: 'https://forklift-sage.vercel.app/'
                         }
                     })
                 })
