@@ -117,8 +117,8 @@ export default function RequestForm() {
                             start_time: formatThaiDateTime(formData.startTime),
                             end_time: formatThaiDateTime(formData.endTime),
                             status: 'รอผู้จัดการแผนกอนุมัติ',
-                            link: 'https://forklift-sage.vercel.app/',
-                            approve_link: 'https://forklift-sage.vercel.app/'
+                            link: 'https://forklift-sage.vercel.app/dashboard/manager',
+                            approve_link: 'https://forklift-sage.vercel.app/dashboard/manager'
                         }
                     })
                 })

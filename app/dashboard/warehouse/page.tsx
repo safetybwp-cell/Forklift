@@ -88,7 +88,7 @@ export default function WarehouseDashboard() {
                             status: '✅ อนุมัติครบถ้วน - กรุณาติดต่อรับรถ',
                             status: '✅ อนุมัติครบถ้วน - กรุณาติดต่อรับรถ',
                             approver_name: 'ผู้จัดการคลังสินค้า',
-                            link: 'https://forklift-sage.vercel.app/' // Link for Requester to check status
+                            link: 'https://forklift-sage.vercel.app/dashboard' // Link for Requester to check status
                         }
                     })
                 })
