@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Camera, Loader2, CheckCircle } from 'lucide-react'
-import { formatThaiDateTime } from '@/lib/utils'
+import { formatThaiDateTime, convertLocalToThailandISO } from '@/lib/utils'
 
 export default function RequestForm() {
     const [formData, setFormData] = useState({
@@ -87,8 +87,8 @@ export default function RequestForm() {
                 requester_email: formData.requesterEmail,
                 department: formData.department,
                 objective: formData.objective,
-                start_time: formData.startTime,
-                end_time: formData.endTime,
+                start_time: convertLocalToThailandISO(formData.startTime),
+                end_time: convertLocalToThailandISO(formData.endTime),
                 vehicle_image_url: imageUrl,
             })
 
